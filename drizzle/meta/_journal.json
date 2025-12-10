@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1765128693114,
+      "tag": "0000_messy_ender_wiggin",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1765320983305,
+      "tag": "0001_spooky_wendigo",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1765330504203,
+      "tag": "0002_magical_puck",
+      "breakpoints": true
+    }
+  ]
+}
