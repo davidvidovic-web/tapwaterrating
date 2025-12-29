@@ -1,0 +1,6 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Water droplet shape -->
+  <path d="M16 4C16 4 8 12 8 18C8 22.4183 11.5817 26 16 26C20.4183 26 24 22.4183 24 18C24 12 16 4 16 4Z" fill="#3b82f6"/>
+  <!-- White dot in center -->
+  <circle cx="16" cy="18" r="3" fill="white"/>
+</svg>

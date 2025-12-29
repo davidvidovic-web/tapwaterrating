@@ -68,8 +68,10 @@ AUTH_GOOGLE_SECRET=your-google-oauth-secret
 # Maps API
 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your-google-maps-api-key
 
-# Analytics (Optional)
+# Analytics & SEO (Optional)
 NEXT_PUBLIC_GA_MEASUREMENT_ID=G-XXXXXXXXXX
+NEXT_PUBLIC_SITE_URL=https://your-domain.com
+NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION=your-google-verification-code
 ```
 
 4. Set up the database:
@@ -234,6 +236,20 @@ Reverse geocode coordinates to city information.
 - `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET`: Google OAuth credentials
 - `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`: Google Maps API key
 - `NEXT_PUBLIC_GA_MEASUREMENT_ID`: Google Analytics measurement ID (format: G-XXXXXXXXXX)
+- `NEXT_PUBLIC_SITE_URL`: Production site URL (e.g., https://tapwaterrating.com)
+- `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION`: Google Search Console verification code
+
+## SEO Features
+
+The application includes comprehensive SEO optimization:
+
+- **Meta Tags**: Complete Open Graph and Twitter Card tags for social media sharing
+- **Structured Data**: JSON-LD schema markup for search engines
+- **Sitemap**: Auto-generated sitemap at `/sitemap.xml`
+- **Robots.txt**: Configured for optimal crawling
+- **PWA Manifest**: Progressive Web App support with manifest.json
+- **Canonical URLs**: Proper canonical tag implementation
+- **Mobile Optimization**: Responsive design and mobile-first approach
 
 ## Deployment
 

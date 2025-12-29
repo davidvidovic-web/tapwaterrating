@@ -1,0 +1,8 @@
+<svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <rect width="180" height="180" rx="40" fill="white"/>
+  <!-- Water droplet shape -->
+  <path d="M90 45C90 45 55 80 55 98C55 118.987 71.013 136 90 136C108.987 136 125 118.987 125 98C125 80 90 45 90 45Z" fill="#3b82f6"/>
+  <!-- White dot in center -->
+  <circle cx="90" cy="98" r="14" fill="white"/>
+</svg>

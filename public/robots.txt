@@ -1,0 +1,7 @@
+# Robots.txt for Tap Water Rating
+User-agent: *
+Allow: /
+Disallow: /api/
+
+# Sitemap
+Sitemap: https://tapwaterrating.com/sitemap.xml
