@@ -1,6 +1,5 @@
 import { db } from "@/db/client";
 import { cities, reviews } from "@/db/schema";
-import { mockReviews } from "@/data/mock";
 import { nanoid } from "nanoid";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
@@ -32,30 +31,7 @@ export async function POST(request: NextRequest) {
   }
 
   if (!db) {
-    const payload = data.data;
-    const newReview = {
-      id: nanoid(),
-      cityId: payload.cityId,
-      userId: "anonymous",
-      latitude: payload.latitude,
-      longitude: payload.longitude,
-      tasteRating: payload.tasteRating,
-      safetyRating: payload.safetyRating,
-      phLevel: payload.phLevel ?? null,
-      hardness: payload.hardness ?? null,
-      waterSource: payload.waterSource ?? null,
-      treatmentProcess: payload.treatmentProcess ?? null,
-      reviewText: payload.reviewText ?? null,
-      visitDate: payload.visitDate ? new Date(payload.visitDate) : null,
-      helpfulCount: 0,
-      isPublished: true,
-      isFlagged: false,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    mockReviews[payload.cityId] = [newReview, ...(mockReviews[payload.cityId] ?? [])];
-    return NextResponse.json({ review: newReview, persisted: false });
+    return NextResponse.json({ error: "Database not available" }, { status: 503 });
   }
 
   try {

@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import {
   index,
   integer,
+  primaryKey,
   real,
   sqliteTable,
   text,
@@ -70,7 +71,7 @@ export const accounts = sqliteTable(
       .references(() => users.id, { onDelete: "cascade" }),
     type: text("type").notNull(),
     provider: text("provider").notNull(),
-    providerAccountId: text("provider_account_id").notNull().primaryKey(),
+    providerAccountId: text("provider_account_id").notNull(),
     refresh_token: text("refresh_token"),
     access_token: text("access_token"),
     expires_at: integer("expires_at"),
@@ -80,6 +81,9 @@ export const accounts = sqliteTable(
     session_state: text("session_state"),
   },
   (table) => ({
+    compoundKey: primaryKey({
+      columns: [table.provider, table.providerAccountId],
+    }),
     userIdx: index("user_idx").on(table.userId),
   })
 );
@@ -92,11 +96,19 @@ export const sessions = sqliteTable("sessions", {
   expires: integer("expires", { mode: "timestamp_ms" }).notNull(),
 });
 
-export const verificationTokens = sqliteTable("verification_tokens", {
-  identifier: text("identifier").notNull(),
-  token: text("token").primaryKey(),
-  expires: integer("expires", { mode: "timestamp_ms" }).notNull(),
-});
+export const verificationTokens = sqliteTable(
+  "verification_tokens",
+  {
+    identifier: text("identifier").notNull(),
+    token: text("token").notNull(),
+    expires: integer("expires", { mode: "timestamp_ms" }).notNull(),
+  },
+  (table) => ({
+    compoundKey: primaryKey({
+      columns: [table.identifier, table.token],
+    }),
+  })
+);
 
 export const reviews = sqliteTable(
   "reviews",

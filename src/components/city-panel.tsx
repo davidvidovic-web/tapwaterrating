@@ -36,7 +36,7 @@ export function CityPanel({ city, reviews, onReviewSubmit, onClose, isMobile = f
     return null;
   }
 
-  const safetyRating = city.avgSafetyRating > 0 ? city.avgSafetyRating : city.safetyRating > 0 ? city.safetyRating / 2 : 0;
+  const safetyRating = (city.avgSafetyRating ?? 0) > 0 ? (city.avgSafetyRating ?? 0) : city.safetyRating > 0 ? city.safetyRating / 2 : 0;
   const safetyColor = getSafetyColor(safetyRating);
   const SafetyIcon = getSafetyIcon(city.officialStatus);
 
@@ -75,23 +75,23 @@ export function CityPanel({ city, reviews, onReviewSubmit, onClose, isMobile = f
               </div>
               <div className="mt-5 flex items-center gap-6">
                 <div className="flex items-center gap-2">
-                  <div className="h-7 w-7" style={{ filter: getRatingColor(city.avgSafetyRating > 0 ? city.avgSafetyRating : city.safetyRating > 0 ? city.safetyRating / 2 : 0).filter }}>
+                  <div className="h-7 w-7" style={{ filter: getRatingColor((city.avgSafetyRating ?? 0) > 0 ? (city.avgSafetyRating ?? 0) : city.safetyRating > 0 ? city.safetyRating / 2 : 0).filter }}>
                     <Image src="/shield-check.svg" alt="Safety" width={28} height={28} className="h-full w-full" />
                   </div>
                   <div className="flex flex-col">
                     <span className="text-2xl font-bold text-gray-900">
-                      {city.avgSafetyRating > 0 ? city.avgSafetyRating.toFixed(1) : city.safetyRating > 0 ? (city.safetyRating / 2).toFixed(1) : '-'}
+                      {(city.avgSafetyRating ?? 0) > 0 ? (city.avgSafetyRating ?? 0).toFixed(1) : city.safetyRating > 0 ? (city.safetyRating / 2).toFixed(1) : '-'}
                     </span>
                     <span className="text-xs text-gray-600">Safety</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="h-7 w-7" style={{ filter: getRatingColor(city.avgTasteRating).filter }}>
+                  <div className="h-7 w-7" style={{ filter: getRatingColor(city.avgTasteRating ?? 0).filter }}>
                     <GlassWater className="h-full w-full" />
                   </div>
                   <div className="flex flex-col">
                     <span className="text-2xl font-bold text-gray-900">
-                      {city.avgTasteRating > 0 ? city.avgTasteRating.toFixed(1) : '-'}
+                      {(city.avgTasteRating ?? 0) > 0 ? (city.avgTasteRating ?? 0).toFixed(1) : '-'}
                     </span>
                     <span className="text-xs text-gray-600">Taste</span>
                   </div>
@@ -134,7 +134,7 @@ export function CityPanel({ city, reviews, onReviewSubmit, onClose, isMobile = f
               {(!isMobile || isExpanded) && (
                 <>
                   {/* Safety Rating - Prominent Display */}
-                  {(city.avgSafetyRating > 0 || city.safetyRating > 0) ? (
+                  {((city.avgSafetyRating ?? 0) > 0 || city.safetyRating > 0) ? (
         <div className="flex items-center gap-4 rounded-3xl bg-white/60 p-5 shadow-sm backdrop-blur-md transition-all hover:bg-white/70">
           <div
             className="h-12 w-12"
@@ -156,8 +156,8 @@ export function CityPanel({ city, reviews, onReviewSubmit, onClose, isMobile = f
             </p>
             <div className="flex items-baseline gap-2">
               <p className={`text-4xl font-bold ${safetyColor.text}`}>
-                {city.avgSafetyRating > 0 
-                  ? city.avgSafetyRating.toFixed(1) 
+                {(city.avgSafetyRating ?? 0) > 0 
+                  ? (city.avgSafetyRating ?? 0).toFixed(1) 
                   : (city.safetyRating / 2).toFixed(1)
                 }
               </p>
@@ -180,12 +180,12 @@ export function CityPanel({ city, reviews, onReviewSubmit, onClose, isMobile = f
       )}
 
       {/* Community Taste Profile */}
-      {city.avgTasteRating > 0 && (
+      {(city.avgTasteRating ?? 0) > 0 && (
         <div className="flex items-center gap-4 rounded-3xl bg-white/60 p-5 shadow-sm backdrop-blur-md transition-all hover:bg-white/70">
           <div
             className="h-12 w-12"
             style={{
-              filter: getRatingColor(city.avgTasteRating).filter
+              filter: getRatingColor(city.avgTasteRating ?? 0).filter
             }}
           >
             <GlassWater className="h-full w-full" />
@@ -195,8 +195,8 @@ export function CityPanel({ city, reviews, onReviewSubmit, onClose, isMobile = f
               Taste Rating
             </p>
             <div className="flex items-baseline gap-2">
-              <p className={`text-4xl font-bold ${getRatingColor(city.avgTasteRating).text}`}>
-                {city.avgTasteRating.toFixed(1)}
+              <p className={`text-4xl font-bold ${getRatingColor(city.avgTasteRating ?? 0).text}`}>
+                {(city.avgTasteRating ?? 0).toFixed(1)}
               </p>
               <span className="text-sm text-gray-600">/ 5</span>
             </div>

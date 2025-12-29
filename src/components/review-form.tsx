@@ -30,11 +30,20 @@ export function ReviewForm({ city, onSuccess, customLocation }: Props) {
   const [waterSourceOther, setWaterSourceOther] = useState("");
   const [treatmentProcess, setTreatmentProcess] = useState("");
   const [treatmentProcessOther, setTreatmentProcessOther] = useState("");
+  
+  // Honeypot field for spam detection
+  const [honeypot, setHoneypot] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setSuccess(false);
+
+    // Check honeypot - if filled, it's likely a bot
+    if (honeypot) {
+      console.warn("Honeypot triggered - potential spam submission");
+      return;
+    }
 
     if (!tasteRating || !safetyRating) {
       setError("Please provide both taste and safety ratings");
@@ -95,6 +104,7 @@ export function ReviewForm({ city, onSuccess, customLocation }: Props) {
       setWaterSourceOther("");
       setTreatmentProcess("");
       setTreatmentProcessOther("");
+      setHoneypot("");
 
       // Call success callback
       onSuccess?.();
@@ -110,6 +120,25 @@ export function ReviewForm({ city, onSuccess, customLocation }: Props) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Honeypot field - hidden from users but visible to bots */}
+      <input
+        type="text"
+        name="website"
+        value={honeypot}
+        onChange={(e) => setHoneypot(e.target.value)}
+        autoComplete="off"
+        tabIndex={-1}
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          left: "-9999px",
+          width: "1px",
+          height: "1px",
+          opacity: 0,
+          pointerEvents: "none"
+        }}
+      />
+
       {/* Ratings */}
       <div className="space-y-6">
         {/* Safety Rating */}

@@ -9,10 +9,7 @@ export function Logo() {
           <div className="h-2 w-2 rounded-full bg-white" />
         </div>
       </div>
-      <div className="flex flex-col leading-tight">
-        <span className="text-xl font-bold text-gray-900">Tap Water Rating</span>
-        <span className="text-xs font-medium text-gray-500 tracking-wider">TWR</span>
-      </div>
+      <span className="text-2xl font-bold text-gray-900">TWR</span>
     </div>
   );
 }

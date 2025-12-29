@@ -1,6 +1,5 @@
 import { db } from "@/db/client";
 import { cities, reviews } from "@/db/schema";
-import { mockCities, mockReviews } from "@/data/mock";
 import { and, desc, eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -12,11 +11,7 @@ export async function GET(
   const { id } = params;
 
   if (!db) {
-    const city = mockCities.find((c) => c.id === id);
-    if (!city) {
-      return NextResponse.json({ error: "City not found" }, { status: 404 });
-    }
-    return NextResponse.json({ city, reviews: mockReviews[id] ?? [] });
+    return NextResponse.json({ error: "Database not available" }, { status: 503 });
   }
 
   try {
