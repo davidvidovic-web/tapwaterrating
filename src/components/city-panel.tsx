@@ -53,7 +53,7 @@ export function CityPanel({ city, reviews, onReviewSubmit, onClose, isMobile = f
       {showReviewForm ? (
         <div className="min-h-full p-6">
           <div className="mb-6 flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-gray-900">Write a Review</h2>
+            <h2 className="text-2xl font-bold text-gray-900">Write a review for {city.name}</h2>
           </div>
           <ReviewForm
             city={city}

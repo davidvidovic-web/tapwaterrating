@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Can I Drink It?",
-  description: "Check tap water safety and quality by city.",
+  title: "Tap Water Rating (TWR)",
+  description: "Check tap water safety and quality by city - Your trusted source for tap water ratings.",
 };
 
 export default function RootLayout({

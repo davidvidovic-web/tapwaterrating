@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import { City, Review } from "@/db/schema";
 import { SearchBar } from "@/components/search-bar";
 import { CityPanel } from "@/components/city-panel";
+import { Logo } from "@/components/logo";
 
 const Map = dynamic(() => import("@/components/map").then((mod) => mod.Map), {
   ssr: false,
@@ -174,6 +175,11 @@ export default function Home() {
 
   return (
     <div className="relative h-screen w-screen overflow-hidden">
+      {/* Logo - Top Left */}
+      <div className="absolute left-4 top-4 z-10 rounded-2xl bg-white/80 px-4 py-2 shadow-lg backdrop-blur-sm">
+        <Logo />
+      </div>
+
       {/* Search Bar - Floating */}
       <div className={`
         absolute left-1/2 z-10 flex w-full -translate-x-1/2 flex-row items-center gap-3 px-4
