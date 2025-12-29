@@ -134,7 +134,7 @@ export const Map = forwardRef<MapHandle, Props>(({ cities, onSelect, selectedCit
   return (
     <MapContainer
       center={[20, 0]}
-      zoom={2}
+      zoom={3}
       style={{ height: "100%", width: "100%" }}
       ref={mapRef}
     >

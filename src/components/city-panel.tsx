@@ -44,7 +44,7 @@ export function CityPanel({ city, reviews, onReviewSubmit, onClose, isMobile = f
     <>
       <button
         onClick={() => (showReviewForm ? setShowReviewForm(false) : onClose())}
-        className="absolute right-5 top-5 z-30 rounded-full bg-black/5 p-2 text-gray-500 backdrop-blur-md transition-colors hover:bg-black/10 hover:text-gray-900"
+        className="absolute right-5 top-5 z-50 rounded-full bg-black/5 p-2 text-gray-500 backdrop-blur-md transition-colors hover:bg-black/10 hover:text-gray-900"
         aria-label={showReviewForm ? "Close form" : "Close panel"}
       >
         <X className="h-5 w-5" />

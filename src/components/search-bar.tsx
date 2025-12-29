@@ -4,6 +4,25 @@ import { City } from "@/db/schema";
 import { useEffect, useState } from "react";
 import { Search, MapPin, Loader2 } from "lucide-react";
 import { useGeolocation } from "@/hooks/use-geolocation";
+// New Places API (V1) Response Type
+type GooglePlaceSuggestion = {
+  placePrediction: {
+    place: string; // resource name, e.g. "places/ChIJ..."
+    placeId: string;
+    text: {
+      text: string;
+      matches: { endOffset: number }[];
+    };
+    structuredFormat: {
+      mainText: { text: string; matches: { endOffset: number }[] };
+      secondaryText?: { text: string };
+    };
+  };
+};
+
+type SearchResult = 
+  | { type: 'city', data: City }
+  | { type: 'google', data: GooglePlaceSuggestion };
 
 type Props = {
   cities: City[];
@@ -14,7 +33,7 @@ type Props = {
 
 export function SearchBar({ cities, onSelect, collapsed = false, onExpandChange }: Props) {
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<City[]>([]);
+  const [results, setResults] = useState<SearchResult[]>([]);
   const [isExpanded, setIsExpanded] = useState(false);
 
   const handleExpand = (expanded: boolean) => {
@@ -45,12 +64,49 @@ export function SearchBar({ cities, onSelect, collapsed = false, onExpandChange 
     const run = async () => {
       setIsLoading(true);
       try {
-        const res = await fetch(`/api/cities?search=${encodeURIComponent(debouncedQuery)}&limit=8`, {
-          signal: controller.signal,
+        // Fetch from both sources in parallel
+        const [dbRes, googleRes] = await Promise.all([
+          fetch(`/api/cities?search=${encodeURIComponent(debouncedQuery)}&limit=5`, { signal: controller.signal }),
+          fetch(`/api/places/autocomplete?input=${encodeURIComponent(debouncedQuery)}`, { signal: controller.signal })
+        ]);
+
+        const dbData = dbRes.ok ? ((await dbRes.json()) as City[]) : [];
+        let googleData: GooglePlaceSuggestion[] = [];
+
+        if (googleRes.ok) {
+          const googleJson = await googleRes.json();
+          // V1 API returns { suggestions: [...] }
+          if (googleJson.suggestions) {
+            googleData = googleJson.suggestions;
+          }
+        }
+
+        // Combine and deduplicate
+        const combinedResults: SearchResult[] = [];
+        
+        // Add DB results first
+        dbData.forEach(city => {
+          combinedResults.push({ type: 'city', data: city });
         });
-        if (!res.ok) return;
-        const data = (await res.json()) as City[];
-        setResults(data);
+
+        // Add Google results if they don't roughly match a DB result
+        googleData.forEach(suggestion => {
+          // Simple deduplication: Check if place name is already in DB results
+          const mainText = suggestion.placePrediction.structuredFormat.mainText.text;
+          const isDuplicate = dbData.some(city => 
+            city.name.toLowerCase() === mainText.toLowerCase()
+          );
+
+          if (!isDuplicate) {
+            combinedResults.push({ type: 'google', data: suggestion });
+          }
+        });
+
+        setResults(combinedResults.slice(0, 8)); // Limit total results
+      } catch (err) {
+        if ((err as Error).name !== 'AbortError') {
+          console.error("Search failed:", err);
+        }
       } finally {
         setIsLoading(false);
       }
@@ -115,27 +171,100 @@ export function SearchBar({ cities, onSelect, collapsed = false, onExpandChange 
 
       {results.length > 0 && (
         <ul className="absolute top-full mt-2 w-full divide-y divide-gray-200/50 rounded-3xl border border-white/40 bg-white/60 py-2 shadow-2xl backdrop-blur-xl z-50">
-          {results.map((city) => (
-            <li key={city.id}>
-              <button
-                type="button"
-                className="flex w-full items-center justify-between px-4 py-3 text-left text-sm transition-colors hover:bg-white/40"
-                onClick={() => {
-                  onSelect(city);
-                  setQuery("");
-                  setResults([]);
-                }}
-              >
-                <div className="flex flex-col">
-                  <span className="font-semibold text-gray-900">{city.name}</span>
-                  <span className="text-xs text-gray-600">{city.country}</span>
-                </div>
-                <span className="rounded-full bg-white/40 px-2 py-1 text-xs font-medium text-gray-700 backdrop-blur-sm">
-                  {city.countryCode}
-                </span>
-              </button>
-            </li>
-          ))}
+          {results.map((result) => {
+            if (result.type === 'city') {
+              const city = result.data;
+              return (
+                <li key={`city-${city.id}`}>
+                  <button
+                    type="button"
+                    className="flex w-full items-center justify-between px-4 py-3 text-left text-sm transition-colors hover:bg-white/40"
+                    onClick={() => {
+                      onSelect(city);
+                      setQuery("");
+                      setResults([]);
+                    }}
+                  >
+                    <div className="flex flex-col">
+                      <span className="font-semibold text-gray-900">{city.name}</span>
+                      <span className="text-xs text-gray-600">{city.country}</span>
+                    </div>
+                    <span className="rounded-full bg-blue-100/60 px-2 py-1 text-xs font-medium text-blue-700 backdrop-blur-sm">
+                      Rated
+                    </span>
+                  </button>
+                </li>
+              );
+            } else {
+              const suggestion = result.data;
+              const placeId = suggestion.placePrediction.placeId;
+              const mainText = suggestion.placePrediction.structuredFormat.mainText.text;
+              const secondaryText = suggestion.placePrediction.structuredFormat.secondaryText?.text || "";
+
+              return (
+                <li key={`google-${placeId}`}>
+                  <button
+                    type="button"
+                    className="flex w-full items-center justify-between px-4 py-3 text-left text-sm transition-colors hover:bg-white/40"
+                    onClick={async () => {
+                      setIsLoading(true);
+                      try {
+                        // Fetch details for this place to get coordinates
+                        const res = await fetch(`/api/places/details?placeId=${placeId}`);
+                        if (!res.ok) throw new Error("Failed to get place details");
+                        
+                        // Parse V1 Details Response
+                        // Returns: { id, displayName: { text, languageCode }, formattedAddress, location: { latitude, longitude } }
+                        const details = await res.json();
+                        const location = details.location;
+                        
+                        // Construct a temporary city object
+                        const tempCity: City = {
+                          id: "-1",
+                          name: mainText,
+                          country: secondaryText.split(',').pop()?.trim() || "", // Rough estimation
+                          countryCode: "XX", // We might not get this easily without more parsing
+                          latitude: location.latitude, // V1 uses latitude/longitude
+                          longitude: location.longitude,
+                          safetyRating: 0,
+                          officialStatus: "unknown",
+                          avgSafetyRating: 0,
+                          avgTasteRating: 0,
+                          reviewCount: 0,
+                          phLevel: null,
+                          hardness: null,
+                          chlorineLevel: null,
+                          tds: null,
+                          waterSource: null,
+                          treatmentProcess: null,
+                          localAdvice: null,
+                          dataSource: null,
+                          lastUpdated: new Date(),
+                          createdAt: new Date(),
+                        };
+                        
+                        onSelect(tempCity);
+                        setQuery("");
+                        setResults([]);
+                      } catch (error) {
+                        console.error("Error selecting place:", error);
+                      } finally {
+                        setIsLoading(false);
+                      }
+                    }}
+                  >
+                    <div className="flex flex-col">
+                      <span className="font-semibold text-gray-900">{mainText}</span>
+                      <span className="text-xs text-gray-600">{secondaryText}</span>
+                    </div>
+                    <span className="rounded-full bg-gray-100/60 px-2 py-1 text-xs font-medium text-gray-600 backdrop-blur-sm">
+                      Map
+                    </span>
+                  </button>
+                </li>
+              );
+            }
+          })}
         </ul>
       )}
     </div>
