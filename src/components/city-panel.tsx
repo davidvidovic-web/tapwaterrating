@@ -44,13 +44,20 @@ export function CityPanel({ city, reviews, onReviewSubmit, onClose, isMobile = f
     <div className="relative">
       <button
         onClick={(e) => {
+          e.preventDefault();
           e.stopPropagation();
           showReviewForm ? setShowReviewForm(false) : onClose();
         }}
-        className="sticky top-5 right-5 z-[100] float-right rounded-full bg-black/5 p-2 text-gray-500 backdrop-blur-md transition-colors hover:bg-black/10 hover:text-gray-900"
+        onTouchEnd={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          showReviewForm ? setShowReviewForm(false) : onClose();
+        }}
+        className="sticky top-5 right-5 z-[100] float-right rounded-full bg-black/5 p-3 text-gray-500 backdrop-blur-md transition-colors hover:bg-black/10 hover:text-gray-900 active:bg-black/20 touch-manipulation"
         aria-label={showReviewForm ? "Close form" : "Close panel"}
+        type="button"
       >
-        <X className="h-5 w-5" />
+        <X className="h-6 w-6" />
       </button>
 
       {showReviewForm ? (
