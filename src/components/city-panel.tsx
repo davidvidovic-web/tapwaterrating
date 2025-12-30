@@ -68,36 +68,38 @@ export function CityPanel({ city, reviews, onReviewSubmit, onClose, isMobile = f
         <div className="space-y-6 p-6">
           {/* Compact Mobile View - Show when collapsed */}
           {isMobile && !isExpanded ? (
-            <div className="pt-6 pb-2 pr-12">
+            <div className="flex flex-col justify-between pt-6 pb-2 pr-12" style={{ height: "calc(35vh - 80px)" }}>
               <div>
-                <h2 className="text-xl font-bold text-gray-900">{city.name}</h2>
-                <p className="text-sm text-gray-700">{city.country}</p>
-              </div>
-              <div className="mt-5 flex items-center gap-6">
-                <div className="flex items-center gap-2">
-                  <div className="h-7 w-7" style={{ filter: getRatingColor((city.avgSafetyRating ?? 0) > 0 ? (city.avgSafetyRating ?? 0) : city.safetyRating > 0 ? city.safetyRating / 2 : 0).filter }}>
-                    <Image src="/shield-check.svg" alt="Safety" width={28} height={28} className="h-full w-full" />
+                <div>
+                  <h2 className="text-3xl font-bold text-gray-900">{city.name}</h2>
+                  <p className="text-lg text-gray-700">{city.country}</p>
+                </div>
+                <div className="mt-5 flex items-center gap-6">
+                  <div className="flex items-center gap-2">
+                    <div className="h-12 w-12" style={{ filter: getRatingColor((city.avgSafetyRating ?? 0) > 0 ? (city.avgSafetyRating ?? 0) : city.safetyRating > 0 ? city.safetyRating / 2 : 0).filter }}>
+                      <Image src="/shield-check.svg" alt="Safety" width={48} height={48} className="h-full w-full" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-4xl font-bold text-gray-900">
+                        {(city.avgSafetyRating ?? 0) > 0 ? (city.avgSafetyRating ?? 0).toFixed(1) : city.safetyRating > 0 ? (city.safetyRating / 2).toFixed(1) : '-'}
+                      </span>
+                      <span className="text-sm text-gray-600">Safety</span>
+                    </div>
                   </div>
-                  <div className="flex flex-col">
-                    <span className="text-2xl font-bold text-gray-900">
-                      {(city.avgSafetyRating ?? 0) > 0 ? (city.avgSafetyRating ?? 0).toFixed(1) : city.safetyRating > 0 ? (city.safetyRating / 2).toFixed(1) : '-'}
-                    </span>
-                    <span className="text-xs text-gray-600">Safety</span>
+                  <div className="flex items-center gap-2">
+                    <div className="h-12 w-12" style={{ filter: getRatingColor(city.avgTasteRating ?? 0).filter }}>
+                      <GlassWater className="h-full w-full" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-4xl font-bold text-gray-900">
+                        {(city.avgTasteRating ?? 0) > 0 ? (city.avgTasteRating ?? 0).toFixed(1) : '-'}
+                      </span>
+                      <span className="text-sm text-gray-600">Taste</span>
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="h-7 w-7" style={{ filter: getRatingColor(city.avgTasteRating ?? 0).filter }}>
-                    <GlassWater className="h-full w-full" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-2xl font-bold text-gray-900">
-                      {(city.avgTasteRating ?? 0) > 0 ? (city.avgTasteRating ?? 0).toFixed(1) : '-'}
-                    </span>
-                    <span className="text-xs text-gray-600">Taste</span>
-                  </div>
-                </div>
               </div>
-              <p className="mt-3 text-center text-xs text-gray-500">Swipe up for details</p>
+              <p className="text-center text-sm text-gray-500 pb-4">Swipe up for details</p>
             </div>
           ) : (
             <>

@@ -1,7 +1,7 @@
 "use client";
 
 import useSWR from "swr";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef } from "react";
 import { motion, useDragControls, PanInfo } from "framer-motion";
 import dynamic from "next/dynamic";
 import { City, Review } from "@/db/schema";
@@ -9,6 +9,7 @@ import { SearchBar } from "@/components/search-bar";
 import { CityPanel } from "@/components/city-panel";
 import { Logo } from "@/components/logo";
 import { MapTilePreload } from "@/components/map-preload";
+import { useLayoutManager } from "@/hooks/use-layout-manager";
 
 const Map = dynamic(() => import("@/components/map").then((mod) => mod.Map), {
   ssr: false,
@@ -55,6 +56,44 @@ export default function Home() {
   } | null>(null);
   const [shouldFlyToCity, setShouldFlyToCity] = useState(true);
   const dragControls = useDragControls();
+
+  // Refs for layout manager
+  const logoRef = useRef<HTMLDivElement>(null);
+  const searchBarRef = useRef<HTMLDivElement>(null);
+  const desktopPanelRef = useRef<HTMLDivElement>(null);
+  const mobileDrawerRef = useRef<HTMLDivElement>(null);
+
+  // Layout manager: all UI elements push each other, not the map
+  const layoutStyles = useLayoutManager({
+    elements: [
+      {
+        ref: logoRef,
+        priority: 8, // High priority - logo stays in place
+        anchorTo: "bottom",
+        canMove: false,
+      },
+      {
+        ref: searchBarRef,
+        priority: 10, // Medium priority - below panels/drawers
+        anchorTo: "top",
+        canMove: false,
+      },
+      {
+        ref: desktopPanelRef,
+        priority: 12, // High priority - sidebar above search
+        visible: !!selectedCity,
+        anchorTo: "right",
+      },
+      {
+        ref: mobileDrawerRef,
+        priority: 12, // High priority - drawer above search
+        visible: !!selectedCity,
+        anchorTo: "bottom",
+      },
+    ],
+    gap: 16,
+    dependencies: [selectedCity, searchExpanded, isDrawerExpanded],
+  });
 
   const handleDragEnd = (
     event: MouseEvent | TouchEvent | PointerEvent,
@@ -237,14 +276,20 @@ export default function Home() {
       <MapTilePreload />
 
       {/* Logo - Bottom Left */}
-      <div className="absolute left-4 bottom-4 z-10 rounded-2xl bg-white/80 px-4 py-2 shadow-lg backdrop-blur-sm">
+      <div 
+        ref={logoRef}
+        style={layoutStyles.get(logoRef)}
+        className="absolute left-4 bottom-4 rounded-2xl bg-white/80 px-4 py-2 shadow-lg backdrop-blur-sm"
+      >
         <Logo />
       </div>
 
       {/* Search Bar - Floating */}
       <div
+        ref={searchBarRef}
+        style={layoutStyles.get(searchBarRef)}
         className={`
-        absolute left-1/2 z-10 flex w-full -translate-x-1/2 flex-row items-center gap-3 px-4
+        absolute left-1/2 flex w-full -translate-x-1/2 flex-row items-center gap-3 px-4
         transition-all duration-300 ease-out
         ${selectedCity && !searchExpanded ? "max-w-[120px]" : "max-w-xl"}
         ${isDrawerExpanded ? "top-4" : "top-6"}
@@ -278,23 +323,27 @@ export default function Home() {
         <>
           {/* Mobile: Bottom Sheet */}
           <motion.div
+            ref={mobileDrawerRef}
+            style={{
+              ...layoutStyles.get(mobileDrawerRef),
+              height: "calc(100vh - 80px)",
+            }}
             className={`
-              md:hidden absolute left-0 right-0 z-20 
+              md:hidden absolute left-0 right-0
               bottom-0
             `}
-            style={{ height: "calc(100vh - 80px)" }}
             initial="collapsed"
             animate={isDrawerExpanded ? "expanded" : "collapsed"}
             variants={{
               expanded: { y: 0 },
-              collapsed: { y: "calc(100% - 160px)" },
+              collapsed: { y: "65%" },
             }}
-            transition={{ type: "spring", damping: 30, stiffness: 300 }}
+            transition={{ type: "spring", damping: 20, stiffness: 500, mass: 0.8 }}
             drag="y"
             dragListener={false}
             dragControls={dragControls}
             dragConstraints={{ top: 0, bottom: 0 }}
-            dragElastic={0.2}
+            dragElastic={0.1}
             onDragEnd={handleDragEnd}
           >
             <div className="relative h-full">
@@ -333,8 +382,10 @@ export default function Home() {
 
           {/* Desktop: Side Panel */}
           <div
+            ref={desktopPanelRef}
+            style={layoutStyles.get(desktopPanelRef)}
             className={`
-            hidden md:block absolute bottom-4 top-4 z-20 w-full max-w-md overflow-hidden rounded-4xl border border-white/20 bg-white/60 shadow-2xl backdrop-blur-2xl lg:w-96
+            hidden md:block absolute bottom-4 top-4 w-full max-w-md overflow-hidden rounded-4xl border border-white/20 bg-white/60 shadow-2xl backdrop-blur-2xl lg:w-96
             transition-all duration-300 ease-out
             ${
               searchExpanded

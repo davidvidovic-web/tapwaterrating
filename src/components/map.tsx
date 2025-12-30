@@ -57,6 +57,17 @@ function MapClickHandler({ onMapClick }: { onMapClick?: (lat: number, lng: numbe
   return null;
 }
 
+// Component to handle ref
+function MapRefHandler({ onMapReady }: { onMapReady: (map: L.Map) => void }) {
+  const map = useMap();
+  
+  useEffect(() => {
+    onMapReady(map);
+  }, [map, onMapReady]);
+  
+  return null;
+}
+
 export const Map = forwardRef<MapHandle, Props>(({ cities, onSelect, selectedCity, onMapClick, customLocation, onPinClick, shouldFlyToCity = true, nearestCity }, ref) => {
   const mapRef = useRef<L.Map | null>(null);
 
@@ -69,6 +80,10 @@ export const Map = forwardRef<MapHandle, Props>(({ cities, onSelect, selectedCit
       }
     },
   }));
+
+  const handleMapReady = (map: L.Map) => {
+    mapRef.current = map;
+  };
 
   // Create custom icon for city markers
   const createCustomIcon = (isSelected: boolean) => {
@@ -136,8 +151,8 @@ export const Map = forwardRef<MapHandle, Props>(({ cities, onSelect, selectedCit
       center={[20, 0]}
       zoom={3}
       style={{ height: "100%", width: "100%" }}
-      ref={mapRef}
     >
+      <MapRefHandler onMapReady={handleMapReady} />
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
