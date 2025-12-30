@@ -9,13 +9,13 @@ import { CityPanel } from "@/components/city-panel";
 import { Logo } from "@/components/logo";
 import { MapTilePreload } from "@/components/map-preload";
 import { useLayoutManager } from "@/hooks/use-layout-manager";
-import { Droplets, Waves } from "lucide-react";
+import { Droplets } from "lucide-react";
 
 const Map = dynamic(() => import("@/components/map").then((mod) => mod.Map), {
   ssr: false,
   loading: () => (
     <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-blue-50 via-cyan-50 to-blue-100">
-      <div className="flex flex-col items-center gap-6">
+      <div className="flex flex-col items-center gap-10">
         {/* Animated water waves */}
         <div className="relative">
           {/* Background circles creating ripple effect */}
@@ -32,15 +32,8 @@ const Map = dynamic(() => import("@/components/map").then((mod) => mod.Map), {
           </div>
         </div>
         
-        {/* Bottom wave animation */}
-        <div className="flex items-center gap-1">
-          <Waves className="h-5 w-5 text-blue-500 animate-bounce" style={{ animationDelay: "0ms" }} />
-          <Waves className="h-5 w-5 text-cyan-500 animate-bounce" style={{ animationDelay: "150ms" }} />
-          <Waves className="h-5 w-5 text-blue-500 animate-bounce" style={{ animationDelay: "300ms" }} />
-        </div>
-        
         {/* Loading text */}
-        <div className="flex flex-col items-center gap-1">
+        <div className="flex flex-col items-center gap-2">
           <span className="text-xl font-bold text-gray-800">Loading Map</span>
           <span className="text-sm text-gray-600">Preparing water quality data</span>
         </div>

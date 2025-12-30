@@ -41,7 +41,7 @@ export function CityPanel({ city, reviews, onReviewSubmit, onClose, isMobile = f
   const SafetyIcon = getSafetyIcon(city.officialStatus);
 
   return (
-    <div className="relative">
+    <div className="relative min-h-full">
       <button
         onClick={(e) => {
           e.preventDefault();
@@ -53,7 +53,7 @@ export function CityPanel({ city, reviews, onReviewSubmit, onClose, isMobile = f
           e.stopPropagation();
           showReviewForm ? setShowReviewForm(false) : onClose();
         }}
-        className="sticky top-5 right-5 z-[100] float-right rounded-full bg-black/5 p-3 text-gray-500 backdrop-blur-md transition-colors hover:bg-black/10 hover:text-gray-900 active:bg-black/20 touch-manipulation"
+        className="absolute top-5 right-5 z-[100] rounded-full bg-black/5 p-3 text-gray-500 backdrop-blur-md transition-colors hover:bg-black/10 hover:text-gray-900 active:bg-black/20 touch-manipulation"
         aria-label={showReviewForm ? "Close form" : "Close panel"}
         type="button"
       >
@@ -61,7 +61,7 @@ export function CityPanel({ city, reviews, onReviewSubmit, onClose, isMobile = f
       </button>
 
       {showReviewForm ? (
-        <div className="min-h-full p-6 clear-both">
+        <div className="min-h-full p-6 pt-16">
           <div className="mb-6 flex items-center justify-between">
             <h2 className="text-2xl font-bold text-gray-900">Write a review for {city.name}</h2>
           </div>
@@ -75,7 +75,7 @@ export function CityPanel({ city, reviews, onReviewSubmit, onClose, isMobile = f
           />
         </div>
       ) : (
-        <div className="space-y-6 p-6">
+        <div className="space-y-6 p-6 pt-16">
           {/* Compact Mobile View - Show when collapsed */}
           {isMobile && !isExpanded ? (
             <div className="flex flex-col justify-between pt-6 pb-2 pr-12" style={{ height: "calc(35vh - 80px)" }}>
