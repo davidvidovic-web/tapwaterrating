@@ -11,7 +11,7 @@ const updateCitySchema = z.object({
   latitude: z.number().optional(),
   longitude: z.number().optional(),
   safetyRating: z.number().optional(),
-  officialStatus: z.string().optional(),
+  officialStatus: z.enum(["safe", "caution", "unsafe", "unknown"]).optional(),
 });
 
 export async function GET(

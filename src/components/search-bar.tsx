@@ -17,6 +17,11 @@ type GooglePlaceSuggestion = {
       mainText: { text: string; matches: { endOffset: number }[] };
       secondaryText?: { text: string };
     };
+    location: {
+      lat: number;
+      lng: number;
+    };
+    address?: any;
   };
 };
 
