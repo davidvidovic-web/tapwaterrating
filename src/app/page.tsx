@@ -522,7 +522,7 @@ export default function Home() {
         ref={searchBarRef}
         style={layoutStyles.get(searchBarRef)}
         className={`
-        absolute left-1/2 flex w-full -translate-x-1/2 flex-row items-center gap-3 px-4
+        absolute left-1/2 flex w-full -translate-x-1/2 flex-row items-center gap-3 px-4 z-10
         transition-all duration-300 ease-out
         ${selectedCity && !searchExpanded ? "max-w-[120px]" : "max-w-xl"}
         ${drawerExpanded && !drawerFullScreen ? "-translate-y-1/2" : ""}
