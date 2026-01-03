@@ -2,6 +2,7 @@ import { db } from "@/db/client";
 import { cities } from "@/db/schema";
 import { and, gte, lte, sql } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
+import { randomUUID } from "crypto";
 
 const MAX_LIMIT = 100;
 const DEFAULT_LIMIT = 50;
@@ -52,5 +53,62 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error("Error fetching cities:", error);
     return NextResponse.json({ error: "Failed to fetch cities" }, { status: 500 });
+  }
+}
+
+export async function POST(request: NextRequest) {
+  if (!db) {
+    return NextResponse.json({ error: "Database not available" }, { status: 503 });
+  }
+
+  try {
+    const body = await request.json();
+    const { name, country, latitude, longitude } = body;
+
+    if (!name || !country || latitude === undefined || longitude === undefined) {
+      return NextResponse.json(
+        { error: "Missing required fields: name, country, latitude, longitude" },
+        { status: 400 }
+      );
+    }
+
+    // Check if city already exists
+    const existing = await db
+      .select()
+      .from(cities)
+      .where(
+        sql`${cities.name} = ${name} AND ${cities.country} = ${country}`
+      )
+      .limit(1);
+
+    if (existing.length > 0) {
+      return NextResponse.json(
+        { error: "City already exists", city: existing[0] },
+        { status: 409 }
+      );
+    }
+
+    // Create new city
+    const result = await db
+      .insert(cities)
+      .values({
+        id: randomUUID(),
+        name,
+        country,
+        countryCode: "", // Will be populated if needed
+        latitude,
+        longitude,
+        safetyRating: 0,
+        officialStatus: "unknown",
+        avgTasteRating: 0,
+        avgSafetyRating: 0,
+        reviewCount: 0,
+      })
+      .returning();
+
+    return NextResponse.json(result[0], { status: 201 });
+  } catch (error) {
+    console.error("Error creating city:", error);
+    return NextResponse.json({ error: "Failed to create city" }, { status: 500 });
   }
 }

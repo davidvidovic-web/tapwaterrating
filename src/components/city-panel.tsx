@@ -94,7 +94,7 @@ export function CityPanel({ city, reviews, onReviewSubmit, onClose, isMobile = f
       )}
 
       {showReviewForm ? (
-        <div className="min-h-full p-6 pt-8">
+        <div className={`min-h-full ${!isMobile || (isMobile && isExpanded) ? 'p-6' : 'px-6'}`}>
           <div className="mb-6">
             <div className="mb-4">
               <button
@@ -133,10 +133,10 @@ export function CityPanel({ city, reviews, onReviewSubmit, onClose, isMobile = f
           />
         </div>
       ) : (
-        <div className="space-y-6 p-6 pt-6">
+        <div className={`space-y-6 ${!isMobile || (isMobile && isExpanded) ? 'p-6' : 'px-6'}`}>
           {/* Compact Mobile View - Show when collapsed */}
           {isMobile && !isExpanded ? (
-            <div className="flex flex-col justify-between py-4 pr-8" style={{ height: "calc(30vh - 50px)" }}>
+            <div className="flex flex-col justify-between pb-4 pr-8" style={{ height: "calc(30vh - 50px)" }}>
               <div>
                 <div>
                   <h2 className="text-3xl font-bold text-gray-900">{city.name}</h2>

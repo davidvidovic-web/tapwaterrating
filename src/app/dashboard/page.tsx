@@ -40,7 +40,8 @@ export default function Dashboard() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [statusFilter, setStatusFilter] = useState<"all" | "published" | "hidden">("all");
-  const [bulkUpdating, setBulkUpdating] = useState(false);
+  const [bulkUpdatingReviews, setBulkUpdatingReviews] = useState(false);
+  const [bulkUpdatingCities, setBulkUpdatingCities] = useState(false);
   const [bulkProgress, setBulkProgress] = useState({ current: 0, total: 0 });
 
   // Redirect to login if not authenticated
@@ -252,10 +253,79 @@ export default function Dashboard() {
         // Build location name (neighborhood/area)
         const locationName = address.neighbourhood || address.suburb || address.city || address.town || address.village || null;
 
+        // Extract city name and country
+        const cityName = address.city || address.town || address.village || address.municipality || address.county || address.state;
+        const country = address.country;
+
+        console.log(`Found location: ${cityName}, ${country}`);
+
+        let cityId = editForm.cityId;
+
+        if (cityName && country) {
+          // Search for the city center coordinates
+          const searchResponse = await fetch(
+            `https://nominatim.openstreetmap.org/search?city=${encodeURIComponent(cityName)}&country=${encodeURIComponent(country)}&format=json&limit=1&accept-language=en`,
+            {
+              headers: {
+                'User-Agent': 'TapWaterRating/1.0',
+                'Accept-Language': 'en'
+              }
+            }
+          );
+
+          if (searchResponse.ok) {
+            const searchResults = await searchResponse.json();
+            if (searchResults && searchResults.length > 0) {
+              const cityLat = parseFloat(searchResults[0].lat);
+              const cityLng = parseFloat(searchResults[0].lon);
+
+              // Look for existing city by name and country first, then by proximity
+              let existingCity = cities?.find(
+                c => c.name === cityName && c.country === country
+              );
+
+              if (!existingCity) {
+                existingCity = cities?.find(
+                  c => Math.abs(c.latitude - cityLat) < 0.005 && Math.abs(c.longitude - cityLng) < 0.005 && c.name === cityName
+                );
+              }
+
+              if (existingCity) {
+                console.log(`✓ Found existing city: ${existingCity.name}`);
+                cityId = existingCity.id;
+              } else {
+                // Create new city
+                console.log(`Creating new city: ${cityName}, ${country}`);
+                const createResponse = await fetch('/api/cities', {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    name: cityName,
+                    country: country,
+                    latitude: cityLat,
+                    longitude: cityLng,
+                  }),
+                });
+
+                if (createResponse.ok) {
+                  const newCity = await createResponse.json();
+                  cityId = newCity.id;
+                  console.log(`✓ Created new city with ID: ${cityId}`);
+                  // Refresh cities list
+                  window.location.reload();
+                } else {
+                  console.error('Failed to create city');
+                }
+              }
+            }
+          }
+        }
+
         setEditForm({
           ...editForm,
           streetAddress,
           locationName,
+          cityId,
         });
       }
     } catch (error) {
@@ -272,16 +342,18 @@ export default function Dashboard() {
       return;
     }
 
-    setBulkUpdating(true);
+    setBulkUpdatingReviews(true);
     setBulkProgress({ current: 0, total: reviews.length });
 
     try {
       let successCount = 0;
       let errorCount = 0;
+      const errors: string[] = [];
 
       for (let i = 0; i < reviews.length; i++) {
         const review = reviews[i];
         setBulkProgress({ current: i + 1, total: reviews.length });
+        console.log(`[${i + 1}/${reviews.length}] Processing review #${review.id.substring(0, 8)}...`);
 
         try {
           // Fetch location from Nominatim
@@ -318,54 +390,93 @@ export default function Dashboard() {
 
               if (updateResponse.ok) {
                 successCount++;
+                console.log(`  ✓ Updated`);
               } else {
                 errorCount++;
+                const errorText = await updateResponse.text();
+                errors.push(`Review #${review.id.substring(0, 8)}: ${errorText}`);
+                console.error(`  ✗ Update failed:`, errorText);
               }
             }
           } else {
             errorCount++;
+            errors.push(`Review #${review.id.substring(0, 8)}: Geocode failed`);
+            console.error(`  ✗ Geocode failed`);
           }
 
           // Rate limiting: wait 1 second between requests
           await new Promise(resolve => setTimeout(resolve, 1000));
         } catch (error) {
-          console.error(`Error updating review ${review.id}:`, error);
+          const errorMsg = error instanceof Error ? error.message : String(error);
+          console.error(`  ✗ Error:`, errorMsg);
+          errors.push(`Review #${review.id.substring(0, 8)}: ${errorMsg}`);
           errorCount++;
         }
       }
 
       await mutate();
-      alert(`Bulk update complete!\n\nSuccessfully updated: ${successCount}\nFailed: ${errorCount}`);
+      
+      console.log('\n=== Review Location Update Summary ===');
+      console.log(`Total reviews: ${reviews.length}`);
+      console.log(`Successfully updated: ${successCount}`);
+      console.log(`Failed: ${errorCount}`);
+      if (errors.length > 0) {
+        console.log('\nErrors:');
+        errors.forEach(err => console.log(`  - ${err}`));
+      }
+      
+      const summary = `Review Update Complete!\n\nTotal: ${reviews.length}\nUpdated: ${successCount}\nFailed: ${errorCount}${
+        errorCount > 0 ? `\n\nFirst few errors:\n${errors.slice(0, 3).join('\n')}${errors.length > 3 ? `\n...and ${errors.length - 3} more` : ''}` : ''
+      }\n\nCheck console for full details.`;
+      
+      alert(summary);
     } catch (error) {
       console.error("Bulk update error:", error);
       alert("Bulk update failed: " + (error instanceof Error ? error.message : "Unknown error"));
     } finally {
-      setBulkUpdating(false);
+      setBulkUpdatingReviews(false);
       setBulkProgress({ current: 0, total: 0 });
     }
   };
 
   const bulkUpdateCityCoordinates = async () => {
-    if (!cities) return;
-    if (!confirm(`This will update city center coordinates for all ${cities.length} cities using Nominatim. This may take several minutes. Continue?`)) {
+    if (!reviews) return;
+    
+    // Extract unique city locations from reviews
+    const uniqueLocations = new Map<string, { lat: number; lng: number }>();
+    reviews.forEach(review => {
+      const key = `${review.latitude.toFixed(4)},${review.longitude.toFixed(4)}`;
+      if (!uniqueLocations.has(key)) {
+        uniqueLocations.set(key, { lat: review.latitude, lng: review.longitude });
+      }
+    });
+    
+    const locationsArray = Array.from(uniqueLocations.values());
+    
+    if (!confirm(`This will check ${locationsArray.length} unique review locations and create/update cities using Nominatim. This may take several minutes. Continue?`)) {
       return;
     }
 
-    setBulkUpdating(true);
-    setBulkProgress({ current: 0, total: cities.length });
+    setBulkUpdatingCities(true);
+    setBulkProgress({ current: 0, total: locationsArray.length });
 
     try {
       let successCount = 0;
+      let createdCount = 0;
       let errorCount = 0;
+      const errors: string[] = [];
+      const successes: string[] = [];
 
-      for (let i = 0; i < cities.length; i++) {
-        const city = cities[i];
-        setBulkProgress({ current: i + 1, total: cities.length });
+      for (let i = 0; i < locationsArray.length; i++) {
+        const location = locationsArray[i];
+        const locationStr = `${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}`;
+        setBulkProgress({ current: i + 1, total: locationsArray.length });
+        console.log(`[${i + 1}/${locationsArray.length}] Processing location: ${locationStr}`);
 
         try {
-          // Fetch city center from Nominatim
+          // Reverse geocode to get city data from Nominatim
           const response = await fetch(
-            `https://nominatim.openstreetmap.org/search?city=${encodeURIComponent(city.name)}&country=${encodeURIComponent(city.country)}&format=json&limit=1&accept-language=en`,
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${location.lat}&lon=${location.lng}&zoom=10&addressdetails=1&accept-language=en`,
             {
               headers: {
                 'User-Agent': 'TapWaterRating/1.0',
@@ -375,46 +486,141 @@ export default function Dashboard() {
           );
 
           if (response.ok) {
-            const results = await response.json();
-            if (results && results.length > 0) {
-              const newLat = parseFloat(results[0].lat);
-              const newLon = parseFloat(results[0].lon);
+            const data = await response.json();
+            const address = data.address;
+            
+            if (address) {
+              // Extract city name and country
+              const cityName = address.city || address.town || address.village || address.municipality || address.county || address.state;
+              const country = address.country;
+              
+              console.log(`  Found: ${cityName}, ${country}`);
+              
+              if (cityName && country) {
+                // Get proper city center coordinates by searching for the city
+                const searchResponse = await fetch(
+                  `https://nominatim.openstreetmap.org/search?city=${encodeURIComponent(cityName)}&country=${encodeURIComponent(country)}&format=json&limit=1&accept-language=en`,
+                  {
+                    headers: {
+                      'User-Agent': 'TapWaterRating/1.0',
+                      'Accept-Language': 'en'
+                    }
+                  }
+                );
+                
+                if (searchResponse.ok) {
+                  const searchResults = await searchResponse.json();
+                  if (searchResults && searchResults.length > 0) {
+                    const cityLat = parseFloat(searchResults[0].lat);
+                    const cityLng = parseFloat(searchResults[0].lon);
+                    
+                    // Look for existing city by name and country first, then by proximity
+                    const existingCity = cities?.find(
+                      c => c.name === cityName && c.country === country
+                    ) || cities?.find(
+                      c => Math.abs(c.latitude - cityLat) < 0.005 && Math.abs(c.longitude - cityLng) < 0.005 && c.name === cityName
+                    );
 
-              // Update city in database
-              const updateResponse = await fetch(`/api/cities/${city.id}`, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ latitude: newLat, longitude: newLon }),
-              });
+                    if (existingCity) {
+                      // Update existing city with Nominatim coordinates
+                      const updateResponse = await fetch(`/api/cities/${existingCity.id}`, {
+                        method: "PATCH",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ latitude: cityLat, longitude: cityLng }),
+                      });
 
-              if (updateResponse.ok) {
-                successCount++;
+                      if (updateResponse.ok) {
+                        successCount++;
+                        successes.push(`Updated: ${cityName}, ${country}`);
+                        console.log(`  ✓ Updated existing city: ${existingCity.name}`);
+                      } else {
+                        errorCount++;
+                        const errorText = await updateResponse.text();
+                        errors.push(`Update failed for ${cityName}: ${errorText}`);
+                        console.error(`  ✗ Update failed:`, errorText);
+                      }
+                    } else {
+                      // Create new city in database
+                      const createResponse = await fetch('/api/cities', {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          name: cityName,
+                          country: country,
+                          latitude: cityLat,
+                          longitude: cityLng,
+                        }),
+                      });
+
+                      if (createResponse.ok) {
+                        createdCount++;
+                        successes.push(`Created: ${cityName}, ${country}`);
+                        console.log(`  ✓ Created new city: ${cityName}`);
+                      } else {
+                        errorCount++;
+                        const errorText = await createResponse.text();
+                        errors.push(`Create failed for ${cityName}: ${errorText}`);
+                        console.error(`  ✗ Create failed:`, errorText);
+                      }
+                    }
+                  } else {
+                    errorCount++;
+                    errors.push(`No city center found for ${cityName}, ${country}`);
+                    console.error(`  ✗ No city center found`);
+                  }
+                } else {
+                  errorCount++;
+                  errors.push(`City search API error at ${locationStr}`);
+                  console.error(`  ✗ City search API error`);
+                }
               } else {
                 errorCount++;
+                errors.push(`Missing city name or country at ${locationStr}`);
+                console.error(`  ✗ Missing city name or country`);
               }
             } else {
               errorCount++;
+              errors.push(`No address data at ${locationStr}`);
+              console.error(`  ✗ No address data`);
             }
           } else {
             errorCount++;
+            errors.push(`Reverse geocode failed at ${locationStr}: ${response.status}`);
+            console.error(`  ✗ Reverse geocode failed: ${response.status}`);
           }
 
           // Rate limiting: wait 1 second between requests
           await new Promise(resolve => setTimeout(resolve, 1000));
         } catch (error) {
-          console.error(`Error updating city ${city.name}:`, error);
+          const errorMsg = error instanceof Error ? error.message : String(error);
+          console.error(`  ✗ Error:`, errorMsg);
+          errors.push(`Exception at ${locationStr}: ${errorMsg}`);
           errorCount++;
         }
       }
 
-      alert(`City coordinates update complete!\\n\\nSuccessfully updated: ${successCount}\\nFailed: ${errorCount}`);
+      console.log('\n=== City Update Summary ===');
+      console.log(`Total locations checked: ${locationsArray.length}`);
+      console.log(`Successfully updated: ${successCount}`);
+      console.log(`Newly created: ${createdCount}`);
+      console.log(`Failed: ${errorCount}`);
+      if (errors.length > 0) {
+        console.log('\nErrors:');
+        errors.forEach(err => console.log(`  - ${err}`));
+      }
+
+      const summary = `City Update Complete!\n\nTotal locations: ${locationsArray.length}\nUpdated: ${successCount}\nCreated: ${createdCount}\nFailed: ${errorCount}${
+        errorCount > 0 ? `\n\nFirst few errors:\n${errors.slice(0, 3).join('\n')}${errors.length > 3 ? `\n...and ${errors.length - 3} more` : ''}` : ''
+      }\n\nCheck console for full details.`;
+      
+      alert(summary);
       // Reload the page to see updated city locations
       window.location.reload();
     } catch (error) {
       console.error("Bulk city update error:", error);
       alert("Bulk city update failed: " + (error instanceof Error ? error.message : "Unknown error"));
     } finally {
-      setBulkUpdating(false);
+      setBulkUpdatingCities(false);
       setBulkProgress({ current: 0, total: 0 });
     }
   };
@@ -547,26 +753,83 @@ export default function Dashboard() {
           </div>
         </div>
         
-        {/* Action Buttons */}
-        <div className="mb-6 flex gap-2">
-          <div className="flex gap-2">
-            <button
-              onClick={bulkUpdateCityCoordinates}
-              disabled={bulkUpdating || !cities}
-              className="flex items-center gap-2 rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <MapPin className="h-4 w-4" />
-              {bulkUpdating ? `Updating Cities ${bulkProgress.current}/${bulkProgress.total}...` : 'Update City Centers'}
-            </button>
-            <button
-              onClick={bulkUpdateLocations}
-              disabled={bulkUpdating || !reviews}
-              className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <MapPin className="h-4 w-4" />
-              {bulkUpdating ? `Updating Reviews ${bulkProgress.current}/${bulkProgress.total}...` : 'Bulk Update Locations'}
-            </button>
+        {/* Bulk Update Actions Section */}
+        <div className="mb-6 rounded-xl bg-white/90 p-6 shadow-lg backdrop-blur-sm">
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">Bulk Update Tools</h2>
+            <p className="text-sm text-gray-600">Update locations and cities from review data using Nominatim</p>
           </div>
+          
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {/* City Updates */}
+            <div className="rounded-lg border border-purple-200 bg-purple-50/50 p-4">
+              <h3 className="mb-2 flex items-center gap-2 text-sm font-medium text-purple-900">
+                <MapPin className="h-4 w-4" />
+                City Management
+              </h3>
+              <p className="mb-3 text-xs text-purple-700">
+                Analyzes all review locations to create/update city entries with proper center coordinates
+              </p>
+              <button
+                onClick={bulkUpdateCityCoordinates}
+                disabled={bulkUpdatingCities || bulkUpdatingReviews || !reviews}
+                className="w-full flex items-center justify-center gap-2 rounded-lg bg-purple-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
+              >
+                <MapPin className="h-4 w-4" />
+                {bulkUpdatingCities ? (
+                  <span>Updating Cities {bulkProgress.current}/{bulkProgress.total}...</span>
+                ) : (
+                  <span>Update City Centers ({reviews?.length || 0} reviews)</span>
+                )}
+              </button>
+            </div>
+
+            {/* Review Location Updates */}
+            <div className="rounded-lg border border-indigo-200 bg-indigo-50/50 p-4">
+              <h3 className="mb-2 flex items-center gap-2 text-sm font-medium text-indigo-900">
+                <MapPin className="h-4 w-4" />
+                Review Locations
+              </h3>
+              <p className="mb-3 text-xs text-indigo-700">
+                Updates missing street addresses and location names for all reviews
+              </p>
+              <button
+                onClick={bulkUpdateLocations}
+                disabled={bulkUpdatingReviews || bulkUpdatingCities || !reviews}
+                className="w-full flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
+              >
+                <MapPin className="h-4 w-4" />
+                {bulkUpdatingReviews ? (
+                  <span>Updating Reviews {bulkProgress.current}/{bulkProgress.total}...</span>
+                ) : (
+                  <span>Bulk Update Locations ({reviews?.length || 0} reviews)</span>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Progress Indicator */}
+          {(bulkUpdatingCities || bulkUpdatingReviews) && (
+            <div className="mt-4 rounded-lg bg-blue-50 p-4">
+              <div className="mb-2 flex items-center justify-between text-sm">
+                <span className="font-medium text-blue-900">
+                  {bulkUpdatingCities ? 'Updating cities...' : 'Updating review locations...'}
+                </span>
+                <span className="text-blue-700">
+                  {bulkProgress.current} / {bulkProgress.total}
+                </span>
+              </div>
+              <div className="h-2 w-full overflow-hidden rounded-full bg-blue-200">
+                <div 
+                  className="h-full bg-blue-600 transition-all duration-300"
+                  style={{ width: `${(bulkProgress.current / bulkProgress.total) * 100}%` }}
+                ></div>
+              </div>
+              <p className="mt-2 text-xs text-blue-600">
+                Please wait... This may take several minutes. Check the console for detailed progress.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Filter and Pagination Controls */}

@@ -15,7 +15,7 @@ import { motion, AnimatePresence } from "framer-motion";
 const Map = dynamic(() => import("@/components/map").then((mod) => mod.Map), {
   ssr: false,
   loading: () => (
-    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-blue-50 via-cyan-50 to-blue-100">
+    <div className="fixed inset-0 flex items-center justify-center bg-gradient-to-br from-blue-50 via-cyan-50 to-blue-100 z-50">
       <div className="flex flex-col items-center gap-10">
         {/* Animated water waves */}
         <div className="relative">
@@ -108,7 +108,7 @@ export default function Home() {
   const DRAWER_EXPANDED_HEIGHT = "90vh"; // 90% of screen
   const DRAWER_FULLSCREEN_HEIGHT = "100vh"; // Full screen
   const MAP_COLLAPSED_HEIGHT = "70vh"; // 70% of screen when drawer is collapsed
-  const MAP_EXPANDED_HEIGHT = "10vh"; // 10% of screen when drawer is expanded
+  const MAP_EXPANDED_HEIGHT = "8vh"; // 8% of screen when drawer is expanded (reduced to eliminate gap)
   const MAP_FULLSCREEN_HEIGHT = "0vh"; // Hidden when drawer is full screen
 
   // Mobile detection
@@ -248,6 +248,18 @@ export default function Home() {
     setDrawerScrolled(target.scrollTop > scrollThreshold);
   };
 
+  // Force map update after drawer state changes
+  useEffect(() => {
+    if (isMobile) {
+      // Small delay to let animation complete, then trigger map resize
+      const timer = setTimeout(() => {
+        window.dispatchEvent(new Event('resize'));
+      }, 450); // Slightly after animation duration (400ms)
+      
+      return () => clearTimeout(timer);
+    }
+  }, [drawerExpanded, drawerFullScreen, selectedCity, isMobile]);
+
   const { data: cityDetails, mutate: mutateCityDetails } = useSWR<{
     city: City;
     reviews: Review[];
@@ -295,7 +307,7 @@ export default function Home() {
       },
     ],
     gap: 16,
-    dependencies: [selectedCity, searchExpanded],
+    dependencies: [selectedCity],
   });
 
   const handleCitySelect = useCallback((city: City) => {
@@ -517,12 +529,14 @@ export default function Home() {
       `}
         animate={{
           top: selectedCity && isMobile && drawerExpanded && !drawerFullScreen 
-            ? "5vh"  // Center in the small 10vh map area when drawer is expanded
+            ? "5vh"  // Center in the small map area when drawer is expanded
+            : selectedCity && isMobile && drawerFullScreen
+            ? "5vh" // Keep at same position when going full screen
             : "24px", // Normal top position for all other states
           y: selectedCity && isMobile && drawerFullScreen ? -100 : 0,
           opacity: selectedCity && isMobile && drawerFullScreen ? 0 : 1
         }}
-        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        transition={{ type: "tween", duration: 0.4, ease: "easeInOut" }}
       >
         <div className="flex-1">
           <SearchBar
@@ -537,14 +551,14 @@ export default function Home() {
 
       {/* Map - Responsive to mobile drawer */}
       <motion.div 
-        className="absolute inset-0 z-0"
+        className={selectedCity && isMobile ? "absolute top-0 left-0 right-0 z-0" : "absolute inset-0 z-0"}
         animate={{
-          height: selectedCity && isMobile 
-            ? (drawerFullScreen ? MAP_FULLSCREEN_HEIGHT : drawerExpanded ? MAP_EXPANDED_HEIGHT : MAP_COLLAPSED_HEIGHT)
-            : "100vh",
+          bottom: selectedCity && isMobile 
+            ? (drawerFullScreen ? DRAWER_EXPANDED_HEIGHT : drawerExpanded ? DRAWER_EXPANDED_HEIGHT : DRAWER_COLLAPSED_HEIGHT)
+            : 0,
           y: selectedCity && isMobile && drawerFullScreen ? -100 : 0
         }}
-        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        transition={{ type: "tween", duration: 0.4, ease: "easeInOut" }}
       >
         <Map
           cities={cities}
@@ -564,13 +578,16 @@ export default function Home() {
       <AnimatePresence>
         {selectedCity && isMobile && (
           <motion.div
-            initial={{ y: "100%" }}
+            initial={{ 
+              y: "100%",
+              height: DRAWER_COLLAPSED_HEIGHT
+            }}
             animate={{ 
               height: drawerFullScreen ? DRAWER_FULLSCREEN_HEIGHT : drawerExpanded ? DRAWER_EXPANDED_HEIGHT : DRAWER_COLLAPSED_HEIGHT,
               y: 0
             }}
             exit={{ y: "100%" }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            transition={{ type: "tween", duration: 0.4, ease: "easeInOut" }}
             className="fixed bottom-0 left-0 right-0 z-20 flex flex-col bg-white shadow-2xl"
             style={{ borderRadius: drawerFullScreen ? "0" : drawerExpanded ? "0.5rem 0.5rem 0 0" : "1.5rem 1.5rem 0 0" }}
           >
@@ -597,7 +614,7 @@ export default function Home() {
             
             {/* Drawer Content */}
             <div 
-              className="flex-1 overflow-y-auto"
+              className={`flex-1 ${drawerExpanded || drawerFullScreen ? 'overflow-y-auto' : 'overflow-y-hidden'}`}
               onTouchStart={handleContentTouchStart}
               onTouchEnd={handleContentTouchEnd}
               onScroll={handleDrawerScroll}
