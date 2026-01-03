@@ -1,7 +1,7 @@
 "use client";
 
 import useSWR from "swr";
-import { useMemo, useState, useRef, useCallback } from "react";
+import React, { useMemo, useState, useRef, useCallback, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { City, Review } from "@/db/schema";
 import { SearchBar } from "@/components/search-bar";
@@ -10,6 +10,7 @@ import { Logo } from "@/components/logo";
 import { MapTilePreload } from "@/components/map-preload";
 import { useLayoutManager } from "@/hooks/use-layout-manager";
 import { Droplets } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 const Map = dynamic(() => import("@/components/map").then((mod) => mod.Map), {
   ssr: false,
@@ -96,6 +97,156 @@ export default function Home() {
   } | null>(null);
   const [shouldFlyToCity, setShouldFlyToCity] = useState(true);
   const [selectedReviewId, setSelectedReviewId] = useState<string | null>(null);
+  const [drawerExpanded, setDrawerExpanded] = useState(false);
+  const [drawerFullScreen, setDrawerFullScreen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [touchStart, setTouchStart] = useState<{ y: number; time: number } | null>(null);
+  const [drawerScrolled, setDrawerScrolled] = useState(false);
+  
+  // Mobile drawer heights
+  const DRAWER_COLLAPSED_HEIGHT = "30vh"; // 30% of screen
+  const DRAWER_EXPANDED_HEIGHT = "90vh"; // 90% of screen
+  const DRAWER_FULLSCREEN_HEIGHT = "100vh"; // Full screen
+  const MAP_COLLAPSED_HEIGHT = "70vh"; // 70% of screen when drawer is collapsed
+  const MAP_EXPANDED_HEIGHT = "10vh"; // 10% of screen when drawer is expanded
+  const MAP_FULLSCREEN_HEIGHT = "0vh"; // Hidden when drawer is full screen
+
+  // Mobile detection
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Drawer interaction handlers
+  const handleDrawerTouchStart = (e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    setTouchStart({ y: touch.clientY, time: Date.now() });
+  };
+
+  const handleDrawerTouchEnd = (e: React.TouchEvent) => {
+    if (!touchStart) return;
+    
+    const touch = e.changedTouches[0];
+    const deltaY = touchStart.y - touch.clientY;
+    const deltaTime = Date.now() - touchStart.time;
+    const velocity = Math.abs(deltaY) / deltaTime;
+    
+    // Swipe up to expand further, down to collapse
+    if (Math.abs(deltaY) > 50 || velocity > 0.5) {
+      if (deltaY > 0) {
+        // Swipe up - expand to next level
+        if (!drawerExpanded) {
+          setDrawerExpanded(true);
+        } else if (!drawerFullScreen) {
+          setDrawerFullScreen(true);
+        }
+      } else {
+        // Swipe down - collapse to previous level
+        if (drawerFullScreen) {
+          setDrawerFullScreen(false);
+        } else if (drawerExpanded) {
+          setDrawerExpanded(false);
+        }
+      }
+    }
+    
+    setTouchStart(null);
+  };
+
+  // Content area touch handlers (for swiping within drawer content)
+  const handleContentTouchStart = (e: React.TouchEvent) => {
+    // Only handle if scrolled to top and swiping down, or if handle interaction
+    const touch = e.touches[0];
+    const target = e.currentTarget as HTMLDivElement;
+    const isAtTop = target.scrollTop === 0;
+    
+    if (isAtTop || drawerFullScreen) {
+      setTouchStart({ y: touch.clientY, time: Date.now() });
+    }
+  };
+
+  const handleContentTouchEnd = (e: React.TouchEvent) => {
+    if (!touchStart) return;
+    
+    const touch = e.changedTouches[0];
+    const deltaY = touchStart.y - touch.clientY;
+    const deltaTime = Date.now() - touchStart.time;
+    const velocity = Math.abs(deltaY) / deltaTime;
+    const target = e.currentTarget as HTMLDivElement;
+    const isAtTop = target.scrollTop === 0;
+    
+    // Only handle swipe down gestures when at top or in full screen
+    if ((Math.abs(deltaY) > 50 || velocity > 0.5) && (isAtTop || drawerFullScreen)) {
+      if (deltaY < 0) {
+        // Swipe down - collapse to previous level
+        e.preventDefault();
+        if (drawerFullScreen) {
+          setDrawerFullScreen(false);
+        } else if (drawerExpanded) {
+          setDrawerExpanded(false);
+        }
+      } else if (deltaY > 0 && drawerFullScreen) {
+        // Swipe up in full screen - allow normal scrolling
+        // Do nothing, let content scroll
+      } else if (deltaY > 0) {
+        // Swipe up - expand to next level
+        if (!drawerExpanded) {
+          setDrawerExpanded(true);
+        } else if (!drawerFullScreen) {
+          setDrawerFullScreen(true);
+        }
+      }
+    }
+    
+    setTouchStart(null);
+  };
+
+  const handleDrawerWheel = (e: React.WheelEvent) => {
+    // Prevent default scroll behavior on the drawer handle
+    e.preventDefault();
+    
+    // Scroll up to expand further, down to collapse
+    if (e.deltaY < -10) {
+      // Scroll up - expand to next level
+      if (!drawerExpanded) {
+        setDrawerExpanded(true);
+      } else if (!drawerFullScreen) {
+        setDrawerFullScreen(true);
+      }
+    } else if (e.deltaY > 10) {
+      // Scroll down - collapse to previous level
+      if (drawerFullScreen) {
+        setDrawerFullScreen(false);
+      } else if (drawerExpanded) {
+        setDrawerExpanded(false);
+      }
+    }
+  };
+
+  const toggleDrawer = () => {
+    if (!drawerExpanded) {
+      setDrawerExpanded(true);
+    } else if (!drawerFullScreen) {
+      setDrawerFullScreen(true);
+    } else {
+      // If fully expanded, collapse all the way
+      setDrawerExpanded(false);
+      setDrawerFullScreen(false);
+    }
+  };
+
+  // Handle drawer content scroll
+  const handleDrawerScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const target = e.currentTarget;
+    const scrollThreshold = 20; // Change handle after scrolling 20px
+    setDrawerScrolled(target.scrollTop > scrollThreshold);
+  };
 
   const { data: cityDetails, mutate: mutateCityDetails } = useSWR<{
     city: City;
@@ -151,6 +302,9 @@ export default function Home() {
     setSelectedCity(city);
     setShouldFlyToCity(true); // Enable flying when selecting from city markers
     setCustomLocation(null); // Clear any custom location
+    setDrawerExpanded(false); // Collapse drawer when new city is selected
+    setDrawerFullScreen(false); // Reset full screen state
+    setDrawerScrolled(false); // Reset scroll state
   }, []);
 
   const handleMapClick = useCallback(async (lat: number, lng: number) => {
@@ -340,24 +494,35 @@ export default function Home() {
       {/* Preload map tiles for LCP optimization */}
       <MapTilePreload />
 
-      {/* Logo - Bottom Left */}
-      <div 
-        ref={logoRef}
-        style={layoutStyles.get(logoRef)}
-        className="absolute left-4 bottom-4 rounded-full border border-white/40 bg-white/60 px-4 py-2 shadow-lg backdrop-blur-xl transition-all hover:bg-white/80 hover:shadow-xl"
-      >
-        <Logo />
-      </div>
+      {/* Logo - Bottom Left - Hidden on mobile when drawer is open or during loading */}
+      {(!isMobile || !selectedCity) && cities && cities.length > 0 && (
+        <div 
+          ref={logoRef}
+          style={layoutStyles.get(logoRef)}
+          className="absolute left-4 bottom-4 z-10 rounded-full border border-white/40 bg-white/60 px-4 py-2 shadow-lg backdrop-blur-xl transition-all hover:bg-white/80 hover:shadow-xl"
+        >
+          <Logo />
+        </div>
+      )}
 
       {/* Search Bar - Floating */}
-      <div
+      <motion.div
         ref={searchBarRef}
         style={layoutStyles.get(searchBarRef)}
         className={`
-        absolute left-1/2 flex w-full -translate-x-1/2 flex-row items-center gap-3 px-4 top-6
+        absolute left-1/2 flex w-full -translate-x-1/2 flex-row items-center gap-3 px-4
         transition-all duration-300 ease-out
         ${selectedCity && !searchExpanded ? "max-w-[120px]" : "max-w-xl"}
+        ${drawerExpanded && !drawerFullScreen ? "-translate-y-1/2" : ""}
       `}
+        animate={{
+          top: selectedCity && isMobile && drawerExpanded && !drawerFullScreen 
+            ? "5vh"  // Center in the small 10vh map area when drawer is expanded
+            : "24px", // Normal top position for all other states
+          y: selectedCity && isMobile && drawerFullScreen ? -100 : 0,
+          opacity: selectedCity && isMobile && drawerFullScreen ? 0 : 1
+        }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
       >
         <div className="flex-1">
           <SearchBar
@@ -368,10 +533,19 @@ export default function Home() {
             onExpandChange={setSearchExpanded}
           />
         </div>
-      </div>
+      </motion.div>
 
-      {/* Map - Full Screen */}
-      <div className="absolute inset-0 z-0">
+      {/* Map - Responsive to mobile drawer */}
+      <motion.div 
+        className="absolute inset-0 z-0"
+        animate={{
+          height: selectedCity && isMobile 
+            ? (drawerFullScreen ? MAP_FULLSCREEN_HEIGHT : drawerExpanded ? MAP_EXPANDED_HEIGHT : MAP_COLLAPSED_HEIGHT)
+            : "100vh",
+          y: selectedCity && isMobile && drawerFullScreen ? -100 : 0
+        }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+      >
         <Map
           cities={cities}
           reviews={reviewsOnMap}
@@ -384,10 +558,75 @@ export default function Home() {
           onPinClick={() => customLocation && handlePinClick(customLocation.lat, customLocation.lng)}
           shouldFlyToCity={shouldFlyToCity}
         />
-      </div>
+      </motion.div>
 
-      {/* City Panel - Unified for all screen sizes */}
-      {selectedCity && (
+      {/* Mobile Drawer - Only on mobile */}
+      <AnimatePresence>
+        {selectedCity && isMobile && (
+          <motion.div
+            initial={{ y: "100%" }}
+            animate={{ 
+              height: drawerFullScreen ? DRAWER_FULLSCREEN_HEIGHT : drawerExpanded ? DRAWER_EXPANDED_HEIGHT : DRAWER_COLLAPSED_HEIGHT,
+              y: 0
+            }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            className="fixed bottom-0 left-0 right-0 z-20 flex flex-col bg-white shadow-2xl"
+            style={{ borderRadius: drawerFullScreen ? "0" : "1.5rem 1.5rem 0 0" }}
+          >
+            {/* Drawer Handle - Hidden when full screen */}
+            {!drawerFullScreen && (
+              <div 
+                className={`flex h-12 w-full cursor-pointer items-center justify-center flex-shrink-0 select-none transition-all duration-300 ${
+                  drawerScrolled 
+                    ? 'bg-gray-50 border-b border-gray-200' 
+                    : 'bg-white'
+                }`}
+                onClick={toggleDrawer}
+                onTouchStart={handleDrawerTouchStart}
+                onTouchEnd={handleDrawerTouchEnd}
+                onWheel={handleDrawerWheel}
+              >
+                <div className={`h-1 w-10 rounded-sm pointer-events-none transition-all duration-300 ${
+                  drawerScrolled 
+                    ? 'bg-blue-400 w-12' 
+                    : 'bg-gray-400'
+                }`}></div>
+              </div>
+            )}
+            
+            {/* Drawer Content */}
+            <div 
+              className="flex-1 overflow-y-auto"
+              onTouchStart={handleContentTouchStart}
+              onTouchEnd={handleContentTouchEnd}
+              onScroll={handleDrawerScroll}
+            >
+              <CityPanel
+                key={`mobile-${selectedCity?.id}-${reviews.length}-${cityDetails?.city?.reviewCount || 0}`}
+                city={city}
+                reviews={reviews}
+                onReviewSubmit={handleReviewSubmit}
+                onClose={() => {
+                  setSelectedCity(null);
+                  setCustomLocation(null);
+                  setSelectedReviewId(null);
+                  setDrawerExpanded(false);
+                  setDrawerFullScreen(false);
+                }}
+                isMobile={true}
+                isExpanded={drawerExpanded || drawerFullScreen}
+                customLocation={customLocation}
+                selectedReviewId={selectedReviewId}
+                onReviewClick={handleReviewSelect}
+              />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Desktop City Panel - Only on desktop */}
+      {selectedCity && !isMobile && (
         <div
           ref={desktopPanelRef}
           style={layoutStyles.get(desktopPanelRef)}

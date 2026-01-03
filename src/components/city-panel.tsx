@@ -13,6 +13,7 @@ import {
   User,
   Edit3,
   X,
+  ArrowLeft,
 } from "lucide-react";
 import { ReviewForm } from "./review-form";
 import { useState, useMemo, useEffect } from "react";
@@ -38,8 +39,15 @@ export function CityPanel({ city, reviews, onReviewSubmit, onClose, isMobile = f
 
   // Reset visible count when city or reviews change
   useEffect(() => {
-    setVisibleReviewsCount(5);
+    setVisibleReviewsCount(Math.max(5, reviews.length > 0 ? 5 : 0));
   }, [city?.id, reviews.length]);
+
+  // When new reviews are added, ensure they're visible
+  useEffect(() => {
+    if (reviews.length > 0 && visibleReviewsCount === 0) {
+      setVisibleReviewsCount(5);
+    }
+  }, [reviews, visibleReviewsCount]);
 
   // Infinite scroll handler
   useEffect(() => {
@@ -71,25 +79,37 @@ export function CityPanel({ city, reviews, onReviewSubmit, onClose, isMobile = f
 
   return (
     <div ref={setReviewsContainerRef} className="relative min-h-full overflow-y-auto">
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          if (!showReviewForm) {
+      {!showReviewForm && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
             onClose();
-          } else {
-            setShowReviewForm(false);
-          }
-        }}
-        className="absolute top-5 right-5 z-[100] rounded-full bg-black/5 p-3 text-gray-500 backdrop-blur-md transition-colors hover:bg-black/10 hover:text-gray-900 active:bg-black/20 touch-manipulation cursor-pointer"
-        aria-label={showReviewForm ? "Close form" : "Close panel"}
-        type="button"
-      >
-        <X className="h-6 w-6 pointer-events-none" />
-      </button>
+          }}
+          className="absolute top-5 right-5 z-[100] p-3 text-gray-600 transition-colors hover:text-gray-900 touch-manipulation cursor-pointer"
+          aria-label="Close panel"
+          type="button"
+        >
+          <X className="h-6 w-6 pointer-events-none" />
+        </button>
+      )}
 
       {showReviewForm ? (
-        <div className="min-h-full p-6 pt-16">
+        <div className="min-h-full p-6 pt-8">
           <div className="mb-6">
+            <div className="mb-4">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowReviewForm(false);
+                }}
+                className="flex items-center gap-2 text-gray-700 hover:text-gray-900 transition-colors"
+                aria-label="Back"
+                type="button"
+              >
+                <ArrowLeft className="h-5 w-5 pointer-events-none" />
+                <span className="text-sm font-medium">Back</span>
+              </button>
+            </div>
             <h2 className="text-2xl font-bold text-gray-900">Write a review for {city.name}</h2>
             {customLocation?.streetAddress && (
               <p className="mt-1 text-sm text-gray-600">
@@ -113,10 +133,10 @@ export function CityPanel({ city, reviews, onReviewSubmit, onClose, isMobile = f
           />
         </div>
       ) : (
-        <div className="space-y-6 p-6 pt-16">
+        <div className="space-y-6 p-6 pt-8">
           {/* Compact Mobile View - Show when collapsed */}
           {isMobile && !isExpanded ? (
-            <div className="flex flex-col justify-between pt-6 pb-2 pr-12" style={{ height: "calc(35vh - 80px)" }}>
+            <div className="flex flex-col justify-between pt-2 pb-2 pr-12" style={{ height: "calc(30vh - 60px)" }}>
               <div>
                 <div>
                   <h2 className="text-3xl font-bold text-gray-900">{city.name}</h2>
@@ -333,7 +353,7 @@ export function CityPanel({ city, reviews, onReviewSubmit, onClose, isMobile = f
             <>
               {visibleReviews.map((review) => (
                 <ReviewCard 
-                  key={review.id} 
+                  key={`${review.id}-${review.safetyRating}-${review.tasteRating}-${review.createdAt}`} 
                   review={review} 
                   isHighlighted={selectedReviewId === review.id}
                   onClick={() => onReviewClick?.(review)}
@@ -522,12 +542,12 @@ function ReviewCard({ review, isHighlighted = false, onClick }: { review: Review
         <div className="text-right">
           {locationName && (
             <div className="text-xs text-gray-700 mb-1 font-medium max-w-[150px] text-right">
-              📍 {locationName}
+              {locationName}
             </div>
           )}
           {!locationName && (
             <div className="text-xs text-gray-500 mb-1">
-              📍 {review.latitude.toFixed(4)}, {review.longitude.toFixed(4)}
+              {review.latitude.toFixed(4)}, {review.longitude.toFixed(4)}
             </div>
           )}
           <div className="text-xs text-gray-600">

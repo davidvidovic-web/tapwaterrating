@@ -278,6 +278,30 @@ npm run start
 
 Ensure all environment variables are properly configured in your deployment environment.
 
+## Changelog
+
+### Version 1.1.0 (January 2026)
+
+**New Features:**
+- Admin authentication system with secure login
+- PWA support with custom icons and manifest
+- Enhanced loading screens with professional animations
+- Improved map markers with plus icons for new reviews
+- Search bar with clear functionality
+
+**Technical Improvements:**
+- JWT-based authentication with NextAuth v5
+- Database-backed admin user management with bcrypt encryption
+- TypeScript strict mode compliance
+- Enhanced error handling and type safety
+- Production build optimizations
+
+**Bug Fixes:**
+- Fixed authentication flow redirects
+- Resolved TypeScript compilation errors
+- Improved null safety in map components
+- Fixed Suspense boundary issues for server-side rendering
+
 ## Contributing
 
 Contributions are welcome! Please follow these guidelines:
