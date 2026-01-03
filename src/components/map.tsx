@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, forwardRef, useImperativeHandle, useState } from "react";
+import { useEffect, useRef, forwardRef, useImperativeHandle, useState, useMemo, useCallback } from "react";
 import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
 import { City, Review } from "@/db/schema";
 import { Droplet } from "lucide-react";
@@ -228,7 +228,7 @@ export const Map = forwardRef<MapHandle, Props>(({ cities, reviews = [], onSelec
   };
 
   // Create custom icon for city markers (aggregate of all reviews in area)
-  const createCustomIcon = (isSelected: boolean, safetyRating: number, reviewCount: number) => {
+  const createCustomIcon = useCallback((isSelected: boolean, safetyRating: number, reviewCount: number) => {
     const color = getSafetyColor(safetyRating);
     const size = isSelected ? 56 : 48;
     const badgeSize = isSelected ? 28 : 24;
@@ -252,10 +252,10 @@ export const Map = forwardRef<MapHandle, Props>(({ cities, reviews = [], onSelec
       iconSize: [size, size],
       iconAnchor: [size / 2, size],
     });
-  };
+  }, []);
 
   // Create custom pin icon with glass and plus icon for new reviews
-  const createPinIcon = () => {
+  const pinIcon = useMemo(() => {
     const iconHtml = `
       <div style="position: relative; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
         <img src="/glass.png" alt="Glass" style="width: 100%; height: 100%; object-fit: contain;" />
@@ -273,10 +273,10 @@ export const Map = forwardRef<MapHandle, Props>(({ cities, reviews = [], onSelec
       iconSize: [40, 40],
       iconAnchor: [20, 45], // Centered horizontally, 5px above marker point
     });
-  };
+  }, []);
 
   // Create review pin icon - smaller droplet
-  const createReviewIcon = (safetyRating: number, isSelected: boolean = false) => {
+  const createReviewIcon = useCallback((safetyRating: number, isSelected: boolean = false) => {
     const color = getSafetyColor(safetyRating);
     const size = isSelected ? 44 : 32;
     const dotSize = isSelected ? 14 : 10;
@@ -297,7 +297,7 @@ export const Map = forwardRef<MapHandle, Props>(({ cities, reviews = [], onSelec
       iconSize: [size, size],
       iconAnchor: [size / 2, size - 5], // Centered horizontally, 5px above the marker point
     });
-  };
+  }, []);
 
   return (
     <MapContainer
@@ -370,7 +370,7 @@ export const Map = forwardRef<MapHandle, Props>(({ cities, reviews = [], onSelec
       {customLocation && (
         <Marker
           position={[customLocation.lat, customLocation.lng]}
-          icon={createPinIcon()}
+          icon={pinIcon}
           eventHandlers={{
             click: () => {
               onPinClick?.();

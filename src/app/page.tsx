@@ -8,6 +8,7 @@ import React, {
   useCallback,
   useEffect,
 } from "react";
+import { createPortal } from "react-dom";
 import dynamic from "next/dynamic";
 import { City, Review } from "@/db/schema";
 import { SearchBar } from "@/components/search-bar";
@@ -18,25 +19,25 @@ import { useLayoutManager } from "@/hooks/use-layout-manager";
 import { Droplets } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-const Map = dynamic(() => import("@/components/map").then((mod) => mod.Map), {
-  ssr: false,
-  loading: () => {
-    const [progress, setProgress] = React.useState(0);
+const MapLoadingScreen = () => {
+  const [progress, setProgress] = React.useState(0);
 
-    React.useEffect(() => {
-      const interval = setInterval(() => {
-        setProgress((prev) => {
-          if (prev >= 90) return prev;
-          const increment = Math.random() * 15;
-          return Math.min(prev + increment, 90);
-        });
-      }, 200);
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 90) return prev;
+        const increment = Math.random() * 15;
+        return Math.min(prev + increment, 90);
+      });
+    }, 200);
 
-      return () => clearInterval(interval);
-    }, []);
+    return () => clearInterval(interval);
+  }, []);
 
-    return (
-      <div className="fixed inset-0 flex items-center justify-center bg-gradient-to-br from-blue-50 via-cyan-50 to-blue-100" style={{ zIndex: 999999 }}>
+  if (typeof document === 'undefined') return null;
+
+  const loadingContent = (
+      <div className="fixed inset-0 flex items-center justify-center bg-gradient-to-br from-blue-50 via-cyan-50 to-blue-100" style={{ zIndex: 9999999 }}>
         <div className="flex flex-col items-center gap-10">
           {/* Animated water waves */}
           <div className="relative">
@@ -84,9 +85,33 @@ const Map = dynamic(() => import("@/components/map").then((mod) => mod.Map), {
           </div>
         </div>
       </div>
-    );
-  },
+  );
+
+  return createPortal(loadingContent, document.body);
+};
+
+const MapComponent = dynamic(() => import("@/components/map").then((mod) => mod.Map), {
+  ssr: false,
+  loading: MapLoadingScreen,
 });
+
+const Map = (props: any) => {
+  const { onMapLoaded, ...otherProps } = props;
+  const mapRef = React.useRef<any>(null);
+  
+  React.useEffect(() => {
+    // Only call onMapLoaded after a short delay to ensure MapComponent has rendered
+    const timer = setTimeout(() => {
+      if (onMapLoaded) {
+        onMapLoaded();
+      }
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, [onMapLoaded]);
+  
+  return <MapComponent ref={mapRef} {...otherProps} />;
+};
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -146,6 +171,13 @@ function findNearestCity(
 }
 
 export default function Home() {
+  const [mapLoaded, setMapLoaded] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  
   const { data: cityList, mutate: mutateCityList } = useSWR<City[]>(
     "/api/cities?limit=100",
     fetcher
@@ -651,11 +683,47 @@ export default function Home() {
 
   return (
     <div className="relative h-screen w-screen overflow-hidden">
+      {/* Global loading screen - shown until map loads */}
+      {mounted && !mapLoaded && createPortal(
+        <div className="fixed inset-0 flex items-center justify-center bg-gradient-to-br from-blue-50 via-cyan-50 to-blue-100" style={{ zIndex: 9999999 }}>
+          <div className="flex flex-col items-center gap-10">
+            {/* Animated water waves */}
+            <div className="relative">
+              {/* Background circles creating ripple effect */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div
+                  className="h-20 w-20 rounded-full bg-blue-400/20 animate-ping"
+                  style={{ animationDuration: "2s" }}
+                ></div>
+              </div>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div
+                  className="h-16 w-16 rounded-full bg-blue-500/20 animate-ping"
+                  style={{ animationDuration: "2s", animationDelay: "0.5s" }}
+                ></div>
+              </div>
+
+              {/* Center droplets icon */}
+              <div className="relative z-10 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 p-5 shadow-lg">
+                <Droplets className="h-10 w-10 text-white animate-pulse" />
+              </div>
+            </div>
+
+            {/* Loading text */}
+            <div className="flex flex-col items-center gap-4 w-64">
+              <span className="text-xl font-bold text-gray-800">Loading Map</span>
+              <span className="text-sm text-gray-600">Preparing water quality data...</span>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+      
       {/* Preload map tiles for LCP optimization */}
       <MapTilePreload />
 
       {/* Logo - Bottom Left - Hidden on mobile when drawer is open or during loading */}
-      {(!isMobile || !selectedCity) && cities && cities.length > 0 && (
+      {mounted && mapLoaded && (!isMobile || !selectedCity) && cities && cities.length > 0 && (
         <div
           ref={logoRef}
           style={layoutStyles.get(logoRef)}
@@ -666,6 +734,7 @@ export default function Home() {
       )}
 
       {/* Search Bar - Floating */}
+      {mounted && mapLoaded && (
       <motion.div
         ref={searchBarRef}
         style={layoutStyles.get(searchBarRef)}
@@ -695,6 +764,7 @@ export default function Home() {
           />
         </div>
       </motion.div>
+      )}
 
       {/* Map - Responsive to mobile drawer */}
       <motion.div
@@ -728,6 +798,7 @@ export default function Home() {
             handlePinClick(customLocation.lat, customLocation.lng)
           }
           shouldFlyToCity={shouldFlyToCity}
+          onMapLoaded={() => setMapLoaded(true)}
         />
       </motion.div>
 
