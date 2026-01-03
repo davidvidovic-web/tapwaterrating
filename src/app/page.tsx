@@ -479,6 +479,17 @@ export default function Home() {
     setCustomLocation(null); // Clear any custom location
     setDrawerExpanded(false); // Collapse drawer when new city is selected
     setDrawerScrolled(false); // Reset scroll state
+    
+    // If this is an unrated city (from search autocomplete), treat it like a pin click
+    // This will open the review form for the user
+    if (city.id === "-1") {
+      // Set as custom location to show pin and enable review form
+      setCustomLocation({
+        lat: city.latitude,
+        lng: city.longitude,
+      });
+      setShouldFlyToCity(true);
+    }
   }, []);
 
   const handleMapClick = useCallback(async (lat: number, lng: number) => {
@@ -743,7 +754,7 @@ export default function Home() {
         className={`
         absolute left-1/2 top-[15px] flex w-full -translate-x-1/2 flex-row items-center gap-3 px-4 z-10
         transition-all duration-300 ease-out
-        ${selectedCity && !searchExpanded ? "max-w-[120px]" : "max-w-xl"}
+        ${!searchExpanded ? "max-w-[120px]" : "max-w-xl"}
       `}
         animate={{
           opacity: 1,
@@ -755,7 +766,7 @@ export default function Home() {
             cities={cities}
             onSelect={handleCitySelect}
             onGeolocation={handleGeolocation}
-            collapsed={!!selectedCity}
+            collapsed={true}
             onExpandChange={setSearchExpanded}
           />
         </div>

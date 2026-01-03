@@ -47,14 +47,6 @@ export function SearchBar({ cities, onSelect, onGeolocation, collapsed = false, 
 
   const debouncedQuery = useDebounce(query, 200);
 
-  // Auto-collapse when the collapsed prop becomes true
-  useEffect(() => {
-    if (collapsed && isExpanded) {
-      handleExpand(false);
-      setQuery("");
-    }
-  }, [collapsed]);
-
   useEffect(() => {
     if (latitude !== null && longitude !== null) {
       // Use exact geolocation coordinates if handler is provided
@@ -97,7 +89,7 @@ export function SearchBar({ cities, onSelect, onGeolocation, collapsed = false, 
       try {
         // Fetch from both sources in parallel
         const [dbRes, googleRes] = await Promise.all([
-          fetch(`/api/cities?search=${encodeURIComponent(debouncedQuery)}&limit=5`, { signal: controller.signal }),
+          fetch(`/api/cities?search=${encodeURIComponent(debouncedQuery)}&limit=3`, { signal: controller.signal }),
           fetch(`/api/places/autocomplete?input=${encodeURIComponent(debouncedQuery)}`, { signal: controller.signal }).catch(() => null)
         ]);
 
@@ -133,7 +125,7 @@ export function SearchBar({ cities, onSelect, onGeolocation, collapsed = false, 
           }
         });
 
-        setResults(combinedResults.slice(0, 8)); // Limit total results
+        setResults(combinedResults.slice(0, 3)); // Limit total results
       } catch (err) {
         if ((err as Error).name !== 'AbortError') {
           console.error("Search failed:", err);
@@ -147,7 +139,7 @@ export function SearchBar({ cities, onSelect, onGeolocation, collapsed = false, 
     return () => controller.abort();
   }, [debouncedQuery]);
 
-  const shouldCollapse = collapsed && !isExpanded;
+  const shouldCollapse = (collapsed && !isExpanded) || (!collapsed && !isExpanded);
 
   return (
     <div className="relative w-full max-w-xl">
@@ -180,14 +172,12 @@ export function SearchBar({ cities, onSelect, onGeolocation, collapsed = false, 
               style={{ fontSize: '16px' }}
               autoFocus={isExpanded}
             />
-            {isExpanded && (
+            {!shouldCollapse && (
               <button
                 onClick={() => {
                   setQuery("");
                   setResults([]);
-                  if (collapsed) {
-                    handleExpand(false);
-                  }
+                  handleExpand(false);
                 }}
                 className="mr-2 flex items-center justify-center rounded-full p-1 text-gray-600 transition-colors hover:bg-black/5 hover:text-gray-900"
                 title={query ? "Clear search" : "Close search"}
@@ -241,6 +231,7 @@ export function SearchBar({ cities, onSelect, onGeolocation, collapsed = false, 
                       onSelect(city);
                       setQuery("");
                       setResults([]);
+                      handleExpand(false);
                     }}
                   >
                     <div className="flex flex-col">
@@ -258,6 +249,7 @@ export function SearchBar({ cities, onSelect, onGeolocation, collapsed = false, 
               const placeId = suggestion.placePrediction.placeId;
               const mainText = suggestion.placePrediction.structuredFormat.mainText.text;
               const secondaryText = suggestion.placePrediction.structuredFormat.secondaryText?.text || "";
+              const location = suggestion.placePrediction.location;
 
               return (
                 <li key={`google-${placeId}`}>
@@ -267,14 +259,10 @@ export function SearchBar({ cities, onSelect, onGeolocation, collapsed = false, 
                     onClick={async () => {
                       setIsLoading(true);
                       try {
-                        // Fetch details for this place to get coordinates
-                        const res = await fetch(`/api/places/details?placeId=${placeId}`);
-                        if (!res.ok) throw new Error("Failed to get place details");
-                        
-                        // Parse V1 Details Response
-                        // Returns: { id, displayName: { text, languageCode }, formattedAddress, location: { latitude, longitude } }
-                        const details = await res.json();
-                        const location = details.location;
+                        // Use location data directly from autocomplete
+                        if (!location || !location.lat || !location.lng) {
+                          throw new Error("Location data not available");
+                        }
                         
                         // Construct a temporary city object
                         const tempCity: City = {
@@ -282,8 +270,8 @@ export function SearchBar({ cities, onSelect, onGeolocation, collapsed = false, 
                           name: mainText,
                           country: secondaryText.split(',').pop()?.trim() || "", // Rough estimation
                           countryCode: "XX", // We might not get this easily without more parsing
-                          latitude: location.latitude, // V1 uses latitude/longitude
-                          longitude: location.longitude,
+                          latitude: location.lat,
+                          longitude: location.lng,
                           safetyRating: 0,
                           officialStatus: "unknown",
                           avgSafetyRating: 0,
@@ -304,6 +292,7 @@ export function SearchBar({ cities, onSelect, onGeolocation, collapsed = false, 
                         onSelect(tempCity);
                         setQuery("");
                         setResults([]);
+                        handleExpand(false);
                       } catch (error) {
                         console.error("Error selecting place:", error);
                       } finally {

@@ -11,43 +11,67 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-
-  if (!apiKey) {
-    return NextResponse.json(
-      { error: "Google Maps API key not configured" },
-      { status: 500 }
-    );
-  }
-
   try {
+    // Use Nominatim (OpenStreetMap) for geocoding
+    // https://nominatim.org/release-docs/latest/api/Search/
     const response = await fetch(
-      "https://places.googleapis.com/v1/places:autocomplete",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Goog-Api-Key": apiKey,
-        },
-        body: JSON.stringify({
-          input,
-          languageCode: "en",
-          includedPrimaryTypes: ["locality", "administrative_area_level_1", "administrative_area_level_2"],
+      `https://nominatim.openstreetmap.org/search?` +
+        new URLSearchParams({
+          q: input,
+          format: "json",
+          addressdetails: "1",
+          limit: "3",
         }),
+      {
+        headers: {
+          "User-Agent": "TapWaterRating/1.0", // Required by Nominatim usage policy
+        },
       }
     );
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.warn("Places API Error (falling back to city search only):", response.status, errorData);
-      // Return empty results instead of throwing, so the frontend can continue with city-only results
+      console.warn("Nominatim API Error:", response.status);
       return NextResponse.json({ suggestions: [] }, { status: 200 });
     }
 
     const data = await response.json();
-    return NextResponse.json(data);
+    console.log("Nominatim raw response:", JSON.stringify(data, null, 2));
+    
+    if (!data || data.length === 0) {
+      console.log("No results from Nominatim for query:", input);
+      return NextResponse.json({ suggestions: [] }, { status: 200 });
+    }
+    
+    // Transform Nominatim response to match expected format
+    const suggestions = data.map((place: any) => ({
+      placePrediction: {
+        place: `nominatim/${place.place_id}`,
+        placeId: place.place_id.toString(),
+        text: {
+          text: place.display_name,
+          matches: [],
+        },
+        structuredFormat: {
+          mainText: { 
+            text: place.address?.city || place.address?.town || place.address?.village || place.name,
+            matches: [] 
+          },
+          secondaryText: { 
+            text: [place.address?.state, place.address?.country].filter(Boolean).join(", ") 
+          },
+        },
+        location: {
+          lat: parseFloat(place.lat),
+          lng: parseFloat(place.lon),
+        },
+        address: place.address,
+      },
+    }));
+
+    console.log("Transformed suggestions:", suggestions.length);
+    return NextResponse.json({ suggestions });
   } catch (error) {
-    console.error("Places Autocomplete error:", error);
+    console.error("Nominatim Autocomplete error:", error);
     return NextResponse.json(
       { error: "Failed to fetch autocomplete predictions" },
       { status: 500 }

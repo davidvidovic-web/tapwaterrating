@@ -7,6 +7,12 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { AuthButton } from "@/components/auth-button";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -662,19 +668,19 @@ export default function Dashboard() {
   // Show loading while checking authentication
   if (status === "loading") {
     return (
-      <div className="fixed inset-0 bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50 flex items-center justify-center z-50">
+      <div className="fixed inset-0 bg-muted/30 flex items-center justify-center z-50">
         <div className="text-center">
           <div className="relative">
-            <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-6"></div>
-            <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-t-cyan-600 rounded-full animate-spin mx-auto" style={{ animationDuration: '1.5s', animationDirection: 'reverse' }}></div>
+            <div className="w-16 h-16 border-4 border-muted border-t-primary rounded-full animate-spin mx-auto mb-6"></div>
+            <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-t-primary/60 rounded-full animate-spin mx-auto" style={{ animationDuration: '1.5s', animationDirection: 'reverse' }}></div>
           </div>
-          <h2 className="text-2xl font-semibold text-gray-800 mb-2">Checking Authentication</h2>
-          <p className="text-gray-600">Please wait while we verify your access...</p>
+          <h2 className="text-2xl font-semibold text-foreground mb-2">Checking Authentication</h2>
+          <p className="text-muted-foreground">Please wait while we verify your access...</p>
           <div className="mt-6 flex justify-center">
             <div className="flex space-x-1">
-              <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></div>
-              <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-              <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+              <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
+              <div className="w-2 h-2 bg-primary rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+              <div className="w-2 h-2 bg-primary rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
             </div>
           </div>
         </div>
@@ -689,16 +695,16 @@ export default function Dashboard() {
 
   if (!reviews) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50 p-8">
+      <div className="min-h-screen bg-muted/30 p-8">
         <div className="mx-auto max-w-7xl">
           <div className="mb-8">
-            <h1 className="text-4xl font-bold text-gray-900">Review Dashboard</h1>
-            <p className="mt-2 text-gray-600">Manage and moderate water quality reviews</p>
+            <h1 className="text-4xl font-bold text-foreground">Review Dashboard</h1>
+            <p className="mt-2 text-muted-foreground">Manage and moderate water quality reviews</p>
           </div>
-          <div className="flex items-center justify-center rounded-2xl bg-white/90 p-12 shadow-xl backdrop-blur-sm">
+          <div className="flex items-center justify-center rounded-2xl bg-card/90 p-12 shadow-xl backdrop-blur-sm">
             <div className="text-center">
-              <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-blue-500 border-t-transparent mx-auto"></div>
-              <p className="text-lg text-gray-600">Loading reviews...</p>
+              <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-primary/20 border-t-primary mx-auto"></div>
+              <p className="text-lg text-muted-foreground">Loading reviews...</p>
             </div>
           </div>
         </div>
@@ -734,587 +740,576 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50 p-8">
+    <div className="min-h-screen bg-muted/30 p-8">
       <div className="mx-auto max-w-[1600px]">
         {/* Header */}
         <div className="mb-8 flex items-start justify-between">
           <div>
-            <h1 className="text-4xl font-bold text-gray-900">Review Dashboard</h1>
-            <p className="mt-2 text-gray-600">Manage and moderate water quality reviews</p>
+            <h1 className="text-4xl font-bold text-foreground">Review Dashboard</h1>
+            <p className="mt-2 text-muted-foreground">Manage and moderate water quality reviews</p>
             {session?.user && (
-              <div className="mt-2 flex items-center gap-2 text-sm text-green-700">
-                <div className="h-2 w-2 rounded-full bg-green-500"></div>
+              <div className="mt-2 flex items-center gap-2 text-sm text-success">
+                <div className="h-2 w-2 rounded-full bg-success"></div>
                 Logged in as {session.user.name || session.user.email} ({session.user.role})
               </div>
             )}
           </div>
           <div className="flex items-center gap-3">
+            <Button asChild variant="default">
+              <Link href="/dashboard/cities">
+                Manage Cities
+              </Link>
+            </Button>
             <AuthButton />
           </div>
         </div>
         
         {/* Bulk Update Actions Section */}
-        <div className="mb-6 rounded-xl bg-white/90 p-6 shadow-lg backdrop-blur-sm">
-          <div className="mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Bulk Update Tools</h2>
-            <p className="text-sm text-gray-600">Update locations and cities from review data using Nominatim</p>
-          </div>
-          
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            {/* City Updates */}
-            <div className="rounded-lg border border-purple-200 bg-purple-50/50 p-4">
-              <h3 className="mb-2 flex items-center gap-2 text-sm font-medium text-purple-900">
-                <MapPin className="h-4 w-4" />
-                City Management
-              </h3>
-              <p className="mb-3 text-xs text-purple-700">
-                Analyzes all review locations to create/update city entries with proper center coordinates
-              </p>
-              <button
-                onClick={bulkUpdateCityCoordinates}
-                disabled={bulkUpdatingCities || bulkUpdatingReviews || !reviews}
-                className="w-full flex items-center justify-center gap-2 rounded-lg bg-purple-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
-              >
-                <MapPin className="h-4 w-4" />
-                {bulkUpdatingCities ? (
-                  <span>Updating Cities {bulkProgress.current}/{bulkProgress.total}...</span>
-                ) : (
-                  <span>Update City Centers ({reviews?.length || 0} reviews)</span>
-                )}
-              </button>
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Bulk Update Tools</CardTitle>
+            <CardDescription>Update locations and cities from review data using Nominatim</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {/* City Updates */}
+              <Card className="border-primary/20 bg-primary/5">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-sm">
+                    <MapPin className="h-4 w-4" />
+                    City Management
+                  </CardTitle>
+                  <CardDescription>
+                    Analyzes all review locations to create/update city entries with proper center coordinates
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button
+                    onClick={bulkUpdateCityCoordinates}
+                    disabled={bulkUpdatingCities || bulkUpdatingReviews || !reviews}
+                    className="w-full"
+                  >
+                    <MapPin className="h-4 w-4" />
+                    {bulkUpdatingCities ? (
+                      <span>Updating Cities {bulkProgress.current}/{bulkProgress.total}...</span>
+                    ) : (
+                      <span>Update City Centers ({reviews?.length || 0} reviews)</span>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Review Location Updates */}
+              <Card className="border-info/20 bg-info/5">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-sm">
+                    <MapPin className="h-4 w-4" />
+                    Review Locations
+                  </CardTitle>
+                  <CardDescription>
+                    Updates missing street addresses and location names for all reviews
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button
+                    onClick={bulkUpdateLocations}
+                    disabled={bulkUpdatingReviews || bulkUpdatingCities || !reviews}
+                    variant="secondary"
+                    className="w-full"
+                  >
+                    <MapPin className="h-4 w-4" />
+                    {bulkUpdatingReviews ? (
+                      <span>Updating Reviews {bulkProgress.current}/{bulkProgress.total}...</span>
+                    ) : (
+                      <span>Bulk Update Locations ({reviews?.length || 0} reviews)</span>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
             </div>
 
-            {/* Review Location Updates */}
-            <div className="rounded-lg border border-indigo-200 bg-indigo-50/50 p-4">
-              <h3 className="mb-2 flex items-center gap-2 text-sm font-medium text-indigo-900">
-                <MapPin className="h-4 w-4" />
-                Review Locations
-              </h3>
-              <p className="mb-3 text-xs text-indigo-700">
-                Updates missing street addresses and location names for all reviews
-              </p>
-              <button
-                onClick={bulkUpdateLocations}
-                disabled={bulkUpdatingReviews || bulkUpdatingCities || !reviews}
-                className="w-full flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
-              >
-                <MapPin className="h-4 w-4" />
-                {bulkUpdatingReviews ? (
-                  <span>Updating Reviews {bulkProgress.current}/{bulkProgress.total}...</span>
-                ) : (
-                  <span>Bulk Update Locations ({reviews?.length || 0} reviews)</span>
-                )}
-              </button>
-            </div>
-          </div>
-
-          {/* Progress Indicator */}
-          {(bulkUpdatingCities || bulkUpdatingReviews) && (
-            <div className="mt-4 rounded-lg bg-blue-50 p-4">
-              <div className="mb-2 flex items-center justify-between text-sm">
-                <span className="font-medium text-blue-900">
-                  {bulkUpdatingCities ? 'Updating cities...' : 'Updating review locations...'}
-                </span>
-                <span className="text-blue-700">
-                  {bulkProgress.current} / {bulkProgress.total}
-                </span>
+            {/* Progress Indicator */}
+            {(bulkUpdatingCities || bulkUpdatingReviews) && (
+              <div className="mt-4 rounded-lg bg-muted p-4">
+                <div className="mb-2 flex items-center justify-between text-sm">
+                  <span className="font-medium text-foreground">
+                    {bulkUpdatingCities ? 'Updating cities...' : 'Updating review locations...'}
+                  </span>
+                  <span className="text-muted-foreground">
+                    {bulkProgress.current} / {bulkProgress.total}
+                  </span>
+                </div>
+                <div className="h-2 w-full overflow-hidden rounded-full bg-secondary">
+                  <div 
+                    className="h-full bg-primary transition-all duration-300"
+                    style={{ width: `${(bulkProgress.current / bulkProgress.total) * 100}%` }}
+                  ></div>
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Please wait... This may take several minutes. Check the console for detailed progress.
+                </p>
               </div>
-              <div className="h-2 w-full overflow-hidden rounded-full bg-blue-200">
-                <div 
-                  className="h-full bg-blue-600 transition-all duration-300"
-                  style={{ width: `${(bulkProgress.current / bulkProgress.total) * 100}%` }}
-                ></div>
-              </div>
-              <p className="mt-2 text-xs text-blue-600">
-                Please wait... This may take several minutes. Check the console for detailed progress.
-              </p>
-            </div>
-          )}
-        </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Filter and Pagination Controls */}
-        <div className="mb-4 rounded-xl bg-white/90 p-4 shadow-lg backdrop-blur-sm">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            {/* Status Filter */}
-            <div className="flex items-center gap-4">
-              <span className="text-sm font-medium text-gray-700">Filter:</span>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleStatusFilterChange("all")}
-                  className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-                    statusFilter === "all"
-                      ? "bg-gray-900 text-white"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  }`}
-                >
-                  All ({reviews.length})
-                </button>
-                <button
-                  onClick={() => handleStatusFilterChange("published")}
-                  className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-                    statusFilter === "published"
-                      ? "bg-green-600 text-white"
-                      : "bg-green-100 text-green-700 hover:bg-green-200"
-                  }`}
-                >
-                  <div className="flex items-center gap-1.5">
+        <Card className="mb-4">
+          <CardContent className="pt-6">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              {/* Status Filter */}
+              <div className="flex items-center gap-4">
+                <span className="text-sm font-medium text-foreground">Filter:</span>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => handleStatusFilterChange("all")}
+                    variant={statusFilter === "all" ? "default" : "outline"}
+                    size="sm"
+                  >
+                    All ({reviews.length})
+                  </Button>
+                  <Button
+                    onClick={() => handleStatusFilterChange("published")}
+                    variant={statusFilter === "published" ? "default" : "outline"}
+                    size="sm"
+                  >
                     <Eye className="h-4 w-4" />
                     Published ({publishedCount})
-                  </div>
-                </button>
-                <button
-                  onClick={() => handleStatusFilterChange("hidden")}
-                  className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-                    statusFilter === "hidden"
-                      ? "bg-orange-600 text-white"
-                      : "bg-orange-100 text-orange-700 hover:bg-orange-200"
-                  }`}
-                >
-                  <div className="flex items-center gap-1.5">
+                  </Button>
+                  <Button
+                    onClick={() => handleStatusFilterChange("hidden")}
+                    variant={statusFilter === "hidden" ? "default" : "outline"}
+                    size="sm"
+                  >
                     <EyeOff className="h-4 w-4" />
                     Hidden ({unpublishedCount})
-                  </div>
-                </button>
+                  </Button>
+                </div>
               </div>
-            </div>
 
-            {/* Items Per Page */}
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-600">Items per page:</span>
-              <div className="flex gap-2">
-                {[10, 20, 50, 100, 200].map((size) => (
-                  <button
-                    key={size}
-                    onClick={() => handleItemsPerPageChange(size)}
-                    className={`rounded-lg px-3 py-1 text-sm font-medium transition-colors ${
-                    itemsPerPage === size
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  }`}
-                  >
-                    {size}
-                  </button>
-                ))}
+              {/* Items Per Page */}
+              <div className="flex items-center gap-4">
+                <span className="text-sm text-muted-foreground">Items per page:</span>
+                <div className="flex gap-2">
+                  {[10, 20, 50, 100, 200].map((size) => (
+                    <Button
+                      key={size}
+                      onClick={() => handleItemsPerPageChange(size)}
+                      variant={itemsPerPage === size ? "default" : "outline"}
+                      size="sm"
+                    >
+                      {size}
+                    </Button>
+                  ))}
+                </div>
               </div>
-            </div>
 
-            {/* Page Navigation */}
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-600">
-                Showing {filteredReviews.length === 0 ? 0 : startIndex + 1}-{Math.min(endIndex, filteredReviews.length)} of {filteredReviews.length}
-              </span>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                  disabled={currentPage === 1}
-                  className="rounded-lg bg-gray-100 px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  Previous
-                </button>
-                <span className="flex items-center px-3 text-sm font-medium text-gray-700">
-                  Page {currentPage} of {totalPages}
+              {/* Page Navigation */}
+              <div className="flex items-center gap-4">
+                <span className="text-sm text-muted-foreground">
+                  Showing {filteredReviews.length === 0 ? 0 : startIndex + 1}-{Math.min(endIndex, filteredReviews.length)} of {filteredReviews.length}
                 </span>
-                <button
-                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                  disabled={currentPage === totalPages}
-                  className="rounded-lg bg-gray-100 px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  Next
-                </button>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                    variant="outline"
+                    size="sm"
+                  >
+                    Previous
+                  </Button>
+                  <span className="flex items-center px-3 text-sm font-medium text-foreground">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <Button
+                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                    disabled={currentPage === totalPages}
+                    variant="outline"
+                    size="sm"
+                  >
+                    Next
+                  </Button>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
         {/* Reviews Table */}
-        <div className="rounded-xl bg-white/90 shadow-lg backdrop-blur-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Location</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Ratings</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Details</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Status</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Date</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-600 uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {paginatedReviews.map((review) => {
-                  const isEditing = editingId === review.id;
-                  const isDeleting = deletingId === review.id;
+        <Card>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Location</TableHead>
+                <TableHead>Ratings</TableHead>
+                <TableHead>Details</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paginatedReviews.map((review) => {
+                const isEditing = editingId === review.id;
+                const isDeleting = deletingId === review.id;
 
-                  if (isEditing && editForm) {
-                    return (
-                      <tr key={review.id} className="bg-blue-50">
-                        <td colSpan={6} className="px-4 py-6">
-                          <div className="space-y-4">
-                            <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                              <MapPin className="h-4 w-4 text-blue-600" />
-                              {getCityName(review.cityId)} - {getLocationName(review)}
-                            </div>
-                            
-                            <div className="grid grid-cols-2 gap-4">
-                              {/* Safety Rating */}
-                              <div>
-                                <label className="mb-1 block text-sm font-medium text-gray-700">Safety Rating</label>
-                                <div className="flex gap-2">
-                                  {[1, 2, 3, 4, 5].map((rating) => (
-                                    <button
-                                      key={rating}
-                                      onClick={() => setEditForm({ ...editForm, safetyRating: rating })}
-                                      className={`h-8 w-8 rounded border-2 text-sm font-medium transition-all ${
-                                        editForm.safetyRating >= rating
-                                          ? "border-blue-500 bg-blue-500 text-white"
-                                          : "border-gray-300 bg-white text-gray-400 hover:border-blue-300"
-                                      }`}
-                                    >
-                                      {rating}
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-
-                              {/* Taste Rating */}
-                              <div>
-                                <label className="mb-1 block text-sm font-medium text-gray-700">Taste Rating</label>
-                                <div className="flex gap-2">
-                                  {[1, 2, 3, 4, 5].map((rating) => (
-                                    <button
-                                      key={rating}
-                                      onClick={() => setEditForm({ ...editForm, tasteRating: rating })}
-                                      className={`h-8 w-8 rounded border-2 text-sm font-medium transition-all ${
-                                        editForm.tasteRating >= rating
-                                          ? "border-green-500 bg-green-500 text-white"
-                                          : "border-gray-300 bg-white text-gray-400 hover:border-green-300"
-                                      }`}
-                                    >
-                                      {rating}
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Review Text */}
+                if (isEditing && editForm) {
+                  return (
+                    <TableRow key={review.id} className="bg-muted/50">
+                      <TableCell colSpan={6} className="p-6">
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                            <MapPin className="h-4 w-4 text-primary" />
+                            {getCityName(review.cityId)} - {getLocationName(review)}
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-4">
+                            {/* Safety Rating */}
                             <div>
-                              <label className="mb-1 block text-sm font-medium text-gray-700">Review Text</label>
-                              <textarea
-                                value={editForm.reviewText}
-                                onChange={(e) => setEditForm({ ...editForm, reviewText: e.target.value })}
-                                rows={2}
-                                className="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 placeholder:text-gray-400"
-                                placeholder="Enter review text..."
+                              <label className="mb-1 block text-sm font-medium text-foreground">Safety Rating</label>
+                              <div className="flex gap-2">
+                                {[1, 2, 3, 4, 5].map((rating) => (
+                                  <Button
+                                    key={rating}
+                                    type="button"
+                                    size="icon"
+                                    variant={editForm.safetyRating >= rating ? "default" : "outline"}
+                                    onClick={() => setEditForm({ ...editForm, safetyRating: rating })}
+                                  >
+                                    {rating}
+                                  </Button>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Taste Rating */}
+                            <div>
+                              <label className="mb-1 block text-sm font-medium text-foreground">Taste Rating</label>
+                              <div className="flex gap-2">
+                                {[1, 2, 3, 4, 5].map((rating) => (
+                                  <Button
+                                    key={rating}
+                                    type="button"
+                                    size="icon"
+                                    variant={editForm.tasteRating >= rating ? "secondary" : "outline"}
+                                    onClick={() => setEditForm({ ...editForm, tasteRating: rating })}
+                                  >
+                                    {rating}
+                                  </Button>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Review Text */}
+                          <div>
+                            <label className="mb-1 block text-sm font-medium text-foreground">Review Text</label>
+                            <textarea
+                              value={editForm.reviewText}
+                              onChange={(e) => setEditForm({ ...editForm, reviewText: e.target.value })}
+                              rows={2}
+                              className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                              placeholder="Enter review text..."
+                            />
+                          </div>
+
+                          <div className="grid grid-cols-4 gap-4">
+                            {/* pH Level */}
+                            <div>
+                              <label className="mb-1 block text-sm font-medium text-foreground">pH Level</label>
+                              <Input
+                                type="number"
+                                step="0.1"
+                                min="0"
+                                max="14"
+                                value={editForm.phLevel ?? ""}
+                                onChange={(e) => setEditForm({ ...editForm, phLevel: e.target.value ? parseFloat(e.target.value) : null })}
+                                placeholder="7.0"
                               />
                             </div>
 
-                            <div className="grid grid-cols-4 gap-4">
-                              {/* pH Level */}
+                            {/* Hardness */}
+                            <div>
+                              <label className="mb-1 block text-sm font-medium text-foreground">Hardness</label>
+                              <select
+                                value={editForm.hardness ?? ""}
+                                onChange={(e) => setEditForm({ ...editForm, hardness: e.target.value as any || null })}
+                                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                              >
+                                <option value="">-</option>
+                                <option value="soft">Soft</option>
+                                <option value="medium">Medium</option>
+                                <option value="hard">Hard</option>
+                                <option value="very-hard">Very Hard</option>
+                              </select>
+                            </div>
+
+                            {/* Water Source */}
+                            <div>
+                              <label className="mb-1 block text-sm font-medium text-foreground">Source</label>
+                              <Input
+                                type="text"
+                                value={editForm.waterSource ?? ""}
+                                onChange={(e) => setEditForm({ ...editForm, waterSource: e.target.value || null })}
+                                placeholder="municipal"
+                              />
+                            </div>
+
+                            {/* Treatment */}
+                            <div>
+                              <label className="mb-1 block text-sm font-medium text-foreground">Treatment</label>
+                              <Input
+                                type="text"
+                                value={editForm.treatmentProcess ?? ""}
+                                onChange={(e) => setEditForm({ ...editForm, treatmentProcess: e.target.value || null })}
+                                placeholder="chlorination"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Location Information */}
+                          <div className="border-t pt-4">
+                            <h4 className="mb-3 text-sm font-semibold text-foreground">Location Information</h4>
+                            <div className="grid grid-cols-2 gap-4">
+                              {/* Latitude */}
                               <div>
-                                <label className="mb-1 block text-sm font-medium text-gray-700">pH Level</label>
-                                <input
+                                <label className="mb-1 block text-sm font-medium text-foreground">Latitude</label>
+                                <Input
                                   type="number"
-                                  step="0.1"
-                                  min="0"
-                                  max="14"
-                                  value={editForm.phLevel ?? ""}
-                                  onChange={(e) => setEditForm({ ...editForm, phLevel: e.target.value ? parseFloat(e.target.value) : null })}
-                                  className="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 placeholder:text-gray-400"
-                                  placeholder="7.0"
+                                  step="0.000001"
+                                  value={editForm.latitude}
+                                  onChange={(e) => setEditForm({ ...editForm, latitude: parseFloat(e.target.value) || 0 })}
                                 />
                               </div>
 
-                              {/* Hardness */}
+                              {/* Longitude */}
                               <div>
-                                <label className="mb-1 block text-sm font-medium text-gray-700">Hardness</label>
+                                <label className="mb-1 block text-sm font-medium text-foreground">Longitude</label>
+                                <Input
+                                  type="number"
+                                  step="0.000001"
+                                  value={editForm.longitude}
+                                  onChange={(e) => setEditForm({ ...editForm, longitude: parseFloat(e.target.value) || 0 })}
+                                />
+                              </div>
+
+                              {/* Street Address */}
+                              <div>
+                                <label className="mb-1 block text-sm font-medium text-foreground">Street Address</label>
+                                <Input
+                                  type="text"
+                                  value={editForm.streetAddress ?? ""}
+                                  onChange={(e) => setEditForm({ ...editForm, streetAddress: e.target.value || null })}
+                                  placeholder="123 Main St"
+                                />
+                              </div>
+
+                              {/* Location Name */}
+                              <div>
+                                <label className="mb-1 block text-sm font-medium text-foreground">Location Name</label>
+                                <Input
+                                  type="text"
+                                  value={editForm.locationName ?? ""}
+                                  onChange={(e) => setEditForm({ ...editForm, locationName: e.target.value || null })}
+                                  placeholder="Neighborhood"
+                                />
+                              </div>
+
+                              {/* City Selector */}
+                              <div className="col-span-2">
+                                <label className="mb-1 block text-sm font-medium text-foreground">City</label>
                                 <select
-                                  value={editForm.hardness ?? ""}
-                                  onChange={(e) => setEditForm({ ...editForm, hardness: e.target.value as any || null })}
-                                  className="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                  value={editForm.cityId}
+                                  onChange={(e) => setEditForm({ ...editForm, cityId: e.target.value })}
+                                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                                 >
-                                  <option value="">-</option>
-                                  <option value="soft">Soft</option>
-                                  <option value="medium">Medium</option>
-                                  <option value="hard">Hard</option>
-                                  <option value="very-hard">Very Hard</option>
+                                  {cities?.map((city) => (
+                                    <option key={city.id} value={city.id}>
+                                      {city.name}, {city.country}
+                                    </option>
+                                  ))}
                                 </select>
                               </div>
 
-                              {/* Water Source */}
-                              <div>
-                                <label className="mb-1 block text-sm font-medium text-gray-700">Source</label>
-                                <input
-                                  type="text"
-                                  value={editForm.waterSource ?? ""}
-                                  onChange={(e) => setEditForm({ ...editForm, waterSource: e.target.value || null })}
-                                  className="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 placeholder:text-gray-400"
-                                  placeholder="municipal"
-                                />
+                              {/* Update Location Button */}
+                              <div className="col-span-2">
+                                <Button
+                                  type="button"
+                                  onClick={fetchLocationFromCoordinates}
+                                  disabled={geocoding}
+                                  variant="secondary"
+                                  className="w-full"
+                                >
+                                  {geocoding ? "Fetching location..." : "Update Address from Coordinates"}
+                                </Button>
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                  This will fetch street address and location name based on the latitude/longitude above
+                                </p>
                               </div>
-
-                              {/* Treatment */}
-                              <div>
-                                <label className="mb-1 block text-sm font-medium text-gray-700">Treatment</label>
-                                <input
-                                  type="text"
-                                  value={editForm.treatmentProcess ?? ""}
-                                  onChange={(e) => setEditForm({ ...editForm, treatmentProcess: e.target.value || null })}
-                                  className="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 placeholder:text-gray-400"
-                                  placeholder="chlorination"
-                                />
-                              </div>
-                            </div>
-
-                            {/* Location Information */}
-                            <div className="border-t pt-4">
-                              <h4 className="mb-3 text-sm font-semibold text-gray-900">Location Information</h4>
-                              <div className="grid grid-cols-2 gap-4">
-                                {/* Latitude */}
-                                <div>
-                                  <label className="mb-1 block text-sm font-medium text-gray-700">Latitude</label>
-                                  <input
-                                    type="number"
-                                    step="0.000001"
-                                    value={editForm.latitude}
-                                    onChange={(e) => setEditForm({ ...editForm, latitude: parseFloat(e.target.value) || 0 })}
-                                    className="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                                  />
-                                </div>
-
-                                {/* Longitude */}
-                                <div>
-                                  <label className="mb-1 block text-sm font-medium text-gray-700">Longitude</label>
-                                  <input
-                                    type="number"
-                                    step="0.000001"
-                                    value={editForm.longitude}
-                                    onChange={(e) => setEditForm({ ...editForm, longitude: parseFloat(e.target.value) || 0 })}
-                                    className="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                                  />
-                                </div>
-
-                                {/* Street Address */}
-                                <div>
-                                  <label className="mb-1 block text-sm font-medium text-gray-700">Street Address</label>
-                                  <input
-                                    type="text"
-                                    value={editForm.streetAddress ?? ""}
-                                    onChange={(e) => setEditForm({ ...editForm, streetAddress: e.target.value || null })}
-                                    className="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 placeholder:text-gray-400"
-                                    placeholder="123 Main St"
-                                  />
-                                </div>
-
-                                {/* Location Name */}
-                                <div>
-                                  <label className="mb-1 block text-sm font-medium text-gray-700">Location Name</label>
-                                  <input
-                                    type="text"
-                                    value={editForm.locationName ?? ""}
-                                    onChange={(e) => setEditForm({ ...editForm, locationName: e.target.value || null })}
-                                    className="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 placeholder:text-gray-400"
-                                    placeholder="Neighborhood"
-                                  />
-                                </div>
-
-                                {/* City Selector */}
-                                <div className="col-span-2">
-                                  <label className="mb-1 block text-sm font-medium text-gray-700">City</label>
-                                  <select
-                                    value={editForm.cityId}
-                                    onChange={(e) => setEditForm({ ...editForm, cityId: e.target.value })}
-                                    className="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                                  >
-                                    {cities?.map((city) => (
-                                      <option key={city.id} value={city.id}>
-                                        {city.name}, {city.country}
-                                      </option>
-                                    ))}
-                                  </select>
-                                </div>
-
-                                {/* Update Location Button */}
-                                <div className="col-span-2">
-                                  <button
-                                    type="button"
-                                    onClick={fetchLocationFromCoordinates}
-                                    disabled={geocoding}
-                                    className="w-full rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-50"
-                                  >
-                                    {geocoding ? "Fetching location..." : "Update Address from Coordinates"}
-                                  </button>
-                                  <p className="mt-1 text-xs text-gray-500">
-                                    This will fetch street address and location name based on the latitude/longitude above
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Published Toggle */}
-                            <div>
-                              <label className="flex items-center gap-2">
-                                <input
-                                  type="checkbox"
-                                  checked={editForm.isPublished}
-                                  onChange={(e) => setEditForm({ ...editForm, isPublished: e.target.checked })}
-                                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500"
-                                />
-                                <span className="text-sm font-medium text-gray-700">Published</span>
-                              </label>
-                            </div>
-
-                            {/* Action Buttons */}
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => handleSave(review.id)}
-                                disabled={saving}
-                                className="flex items-center gap-2 rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-                              >
-                                <Save className="h-4 w-4" />
-                                {saving ? "Saving..." : "Save"}
-                              </button>
-                              <button
-                                onClick={handleCancelEdit}
-                                disabled={saving}
-                                className="flex items-center gap-2 rounded border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-                              >
-                                <X className="h-4 w-4" />
-                                Cancel
-                              </button>
                             </div>
                           </div>
-                        </td>
-                      </tr>
-                    );
-                  }
 
-                  return (
-                    <tr key={review.id} className="hover:bg-gray-50 transition-colors">
-                      {/* Location */}
-                      <td className="px-4 py-3">
-                        <div className="flex items-start gap-2">
-                          <MapPin className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                          {/* Published Toggle */}
                           <div>
-                            <div className="text-sm font-medium text-gray-900">{getCityName(review.cityId)}</div>
-                            <div className="text-xs text-gray-500">{getLocationName(review)}</div>
+                            <label className="flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                checked={editForm.isPublished}
+                                onChange={(e) => setEditForm({ ...editForm, isPublished: e.target.checked })}
+                                className="h-4 w-4 rounded border-input focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                              />
+                              <span className="text-sm font-medium text-foreground">Published</span>
+                            </label>
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div className="flex gap-2">
+                            <Button
+                              onClick={() => handleSave(review.id)}
+                              disabled={saving}
+                            >
+                              <Save className="h-4 w-4" />
+                              {saving ? "Saving..." : "Save"}
+                            </Button>
+                            <Button
+                              onClick={handleCancelEdit}
+                              disabled={saving}
+                              variant="outline"
+                            >
+                              <X className="h-4 w-4" />
+                              Cancel
+                            </Button>
                           </div>
                         </div>
-                      </td>
-
-                      {/* Ratings */}
-                      <td className="px-4 py-3">
-                        <div className="flex gap-3">
-                          <div className="flex items-center gap-1">
-                            <div className="rounded bg-blue-100 px-2 py-0.5">
-                              <span className="text-sm font-bold text-blue-700">{review.safetyRating}</span>
-                            </div>
-                            <span className="text-xs text-gray-600">Safety</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <div className="rounded bg-green-100 px-2 py-0.5">
-                              <span className="text-sm font-bold text-green-700">{review.tasteRating}</span>
-                            </div>
-                            <span className="text-xs text-gray-600">Taste</span>
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* Details */}
-                      <td className="px-4 py-3">
-                        <div className="max-w-md">
-                          {review.reviewText ? (
-                            <p className="text-sm text-gray-700 line-clamp-2">{review.reviewText}</p>
-                          ) : (
-                            <p className="text-sm italic text-gray-400">No text</p>
-                          )}
-                          {(review.phLevel || review.hardness || review.waterSource || review.treatmentProcess) && (
-                            <div className="mt-1 flex flex-wrap gap-1">
-                              {review.phLevel && (
-                                <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-700">
-                                  pH: {review.phLevel}
-                                </span>
-                              )}
-                              {review.hardness && (
-                                <span className="inline-flex items-center rounded-full bg-purple-50 px-2 py-0.5 text-xs text-purple-700 capitalize">
-                                  {review.hardness.replace('-', ' ')}
-                                </span>
-                              )}
-                              {review.waterSource && (
-                                <span className="inline-flex items-center rounded-full bg-cyan-50 px-2 py-0.5 text-xs text-cyan-700 capitalize">
-                                  {review.waterSource}
-                                </span>
-                              )}
-                              {review.treatmentProcess && (
-                                <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-0.5 text-xs text-green-700 capitalize">
-                                  {review.treatmentProcess}
-                                </span>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </td>
-
-                      {/* Status */}
-                      <td className="px-4 py-3">
-                        {review.isPublished ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700">
-                            <Eye className="h-3 w-3" />
-                            Public
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2.5 py-0.5 text-xs font-medium text-orange-700">
-                            <EyeOff className="h-3 w-3" />
-                            Hidden
-                          </span>
-                        )}
-                      </td>
-
-                      {/* Date */}
-                      <td className="px-4 py-3">
-                        <div className="text-xs text-gray-500">
-                          {review.createdAt ? new Date(review.createdAt).toLocaleDateString() : 'N/A'}
-                        </div>
-                      </td>
-
-                      {/* Actions */}
-                      <td className="px-4 py-3">
-                        <div className="flex justify-end gap-2">
-                          <button
-                            onClick={() => toggleVisibility(review)}
-                            className={`rounded p-2 text-white transition-colors ${
-                              review.isPublished
-                                ? "bg-orange-600 hover:bg-orange-700"
-                                : "bg-green-600 hover:bg-green-700"
-                            }`}
-                            title={review.isPublished ? "Hide review" : "Publish review"}
-                          >
-                            {review.isPublished ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                          </button>
-                          <button
-                            onClick={() => handleEdit(review)}
-                            className="rounded bg-blue-600 p-2 text-white transition-colors hover:bg-blue-700"
-                            title="Edit"
-                          >
-                            <Edit2 className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(review.id)}
-                            disabled={isDeleting}
-                            className="rounded bg-red-600 p-2 text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
-                            title="Delete"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
+                }
+
+                return (
+                  <TableRow key={review.id}>
+                    {/* Location */}
+                    <TableCell>
+                      <div className="flex items-start gap-2">
+                        <MapPin className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                        <div>
+                          <div className="text-sm font-medium text-foreground">{getCityName(review.cityId)}</div>
+                          <div className="text-xs text-muted-foreground">{getLocationName(review)}</div>
+                        </div>
+                      </div>
+                    </TableCell>
+
+                    {/* Ratings */}
+                    <TableCell>
+                      <div className="flex gap-3">
+                        <div className="flex items-center gap-1">
+                          <Badge variant="default">
+                            {review.safetyRating}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">Safety</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Badge variant="secondary">
+                            {review.tasteRating}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">Taste</span>
+                        </div>
+                      </div>
+                    </TableCell>
+
+                    {/* Details */}
+                    <TableCell>
+                      <div className="max-w-md">
+                        {review.reviewText ? (
+                          <p className="text-sm text-foreground line-clamp-2">{review.reviewText}</p>
+                        ) : (
+                          <p className="text-sm italic text-muted-foreground">No text</p>
+                        )}
+                        {(review.phLevel || review.hardness || review.waterSource || review.treatmentProcess) && (
+                          <div className="mt-1 flex flex-wrap gap-1">
+                            {review.phLevel && (
+                              <Badge variant="outline">
+                                pH: {review.phLevel}
+                              </Badge>
+                            )}
+                            {review.hardness && (
+                              <Badge variant="outline" className="capitalize">
+                                {review.hardness.replace('-', ' ')}
+                              </Badge>
+                            )}
+                            {review.waterSource && (
+                              <Badge variant="outline" className="capitalize">
+                                {review.waterSource}
+                              </Badge>
+                            )}
+                            {review.treatmentProcess && (
+                              <Badge variant="outline" className="capitalize">
+                                {review.treatmentProcess}
+                              </Badge>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
+
+                    {/* Status */}
+                    <TableCell>
+                      {review.isPublished ? (
+                        <Badge variant="success">
+                          <Eye className="h-3 w-3" />
+                          Public
+                        </Badge>
+                      ) : (
+                        <Badge variant="warning">
+                          <EyeOff className="h-3 w-3" />
+                          Hidden
+                        </Badge>
+                      )}
+                    </TableCell>
+
+                    {/* Date */}
+                    <TableCell>
+                      <div className="text-xs text-muted-foreground">
+                        {review.createdAt ? new Date(review.createdAt).toLocaleDateString() : 'N/A'}
+                      </div>
+                    </TableCell>
+
+                    {/* Actions */}
+                    <TableCell>
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          onClick={() => toggleVisibility(review)}
+                          size="icon"
+                          variant="ghost"
+                          title={review.isPublished ? "Hide review" : "Publish review"}
+                        >
+                          {review.isPublished ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </Button>
+                        <Button
+                          onClick={() => handleEdit(review)}
+                          size="icon"
+                          variant="ghost"
+                          title="Edit"
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          onClick={() => handleDelete(review.id)}
+                          disabled={isDeleting}
+                          size="icon"
+                          variant="ghost"
+                          title="Delete"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </Card>
       </div>
     </div>
   );
