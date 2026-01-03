@@ -15,7 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { ReviewForm } from "./review-form";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Image from "next/image";
 
 type Props = {
@@ -25,12 +25,41 @@ type Props = {
   onClose: () => void;
   isMobile?: boolean;
   isExpanded?: boolean;
-  customLocation?: { lat: number; lng: number } | null;
+  customLocation?: { lat: number; lng: number; streetAddress?: string; neighborhood?: string } | null;
+  selectedReviewId?: string | null;
+  onReviewClick?: (review: Review) => void;
 };
 
-export function CityPanel({ city, reviews, onReviewSubmit, onClose, isMobile = false, isExpanded = true, customLocation }: Props) {
+export function CityPanel({ city, reviews, onReviewSubmit, onClose, isMobile = false, isExpanded = true, customLocation, selectedReviewId, onReviewClick }: Props) {
   // Auto-open review form if we have a custom location (user clicked on map)
   const [showReviewForm, setShowReviewForm] = useState(!!customLocation);
+  const [visibleReviewsCount, setVisibleReviewsCount] = useState(5);
+  const [reviewsContainerRef, setReviewsContainerRef] = useState<HTMLDivElement | null>(null);
+
+  // Reset visible count when city or reviews change
+  useEffect(() => {
+    setVisibleReviewsCount(5);
+  }, [city?.id, reviews.length]);
+
+  // Infinite scroll handler
+  useEffect(() => {
+    if (!reviewsContainerRef) return;
+
+    const handleScroll = () => {
+      const container = reviewsContainerRef;
+      const scrolledToBottom = 
+        container.scrollHeight - container.scrollTop <= container.clientHeight + 100;
+
+      if (scrolledToBottom && visibleReviewsCount < reviews.length) {
+        setVisibleReviewsCount(prev => Math.min(prev + 5, reviews.length));
+      }
+    };
+
+    reviewsContainerRef.addEventListener('scroll', handleScroll);
+    return () => reviewsContainerRef.removeEventListener('scroll', handleScroll);
+  }, [reviewsContainerRef, visibleReviewsCount, reviews.length]);
+
+  const visibleReviews = reviews.slice(0, visibleReviewsCount);
 
   if (!city) {
     return null;
@@ -41,7 +70,7 @@ export function CityPanel({ city, reviews, onReviewSubmit, onClose, isMobile = f
   const SafetyIcon = getSafetyIcon(city.officialStatus);
 
   return (
-    <div className="relative min-h-full">
+    <div ref={setReviewsContainerRef} className="relative min-h-full overflow-y-auto">
       <button
         onClick={(e) => {
           e.stopPropagation();
@@ -60,8 +89,19 @@ export function CityPanel({ city, reviews, onReviewSubmit, onClose, isMobile = f
 
       {showReviewForm ? (
         <div className="min-h-full p-6 pt-16">
-          <div className="mb-6 flex items-center justify-between">
+          <div className="mb-6">
             <h2 className="text-2xl font-bold text-gray-900">Write a review for {city.name}</h2>
+            {customLocation?.streetAddress && (
+              <p className="mt-1 text-sm text-gray-600">
+                {customLocation.streetAddress}
+                {customLocation.neighborhood && ` • ${customLocation.neighborhood}`}
+              </p>
+            )}
+            {customLocation && !customLocation.streetAddress && (
+              <p className="mt-1 text-xs text-gray-500">
+                {customLocation.lat.toFixed(6)}, {customLocation.lng.toFixed(6)}
+              </p>
+            )}
           </div>
           <ReviewForm
             city={city}
@@ -156,7 +196,10 @@ export function CityPanel({ city, reviews, onReviewSubmit, onClose, isMobile = f
           </div>
           <div className="flex-1">
             <p className="text-base font-bold text-gray-800">
-              Safety Rating
+              Average Safety Rating
+            </p>
+            <p className="text-xs text-gray-500 mb-1">
+              Aggregate of {city.reviewCount || 0} {city.reviewCount === 1 ? 'review' : 'reviews'}
             </p>
             <div className="flex items-baseline gap-2">
               <p className={`text-4xl font-bold ${safetyColor.text}`}>
@@ -196,7 +239,10 @@ export function CityPanel({ city, reviews, onReviewSubmit, onClose, isMobile = f
           </div>
           <div className="flex-1">
             <p className="text-base font-bold text-gray-800">
-              Taste Rating
+              Average Taste Rating
+            </p>
+            <p className="text-xs text-gray-500 mb-1">
+              Aggregate of {city.reviewCount || 0} {city.reviewCount === 1 ? 'review' : 'reviews'}
             </p>
             <div className="flex items-baseline gap-2">
               <p className={`text-4xl font-bold ${getRatingColor(city.avgTasteRating ?? 0).text}`}>
@@ -269,8 +315,11 @@ export function CityPanel({ city, reviews, onReviewSubmit, onClose, isMobile = f
       <div>
         <div className="mb-4">
           <h3 className="text-lg font-semibold text-gray-900">
-            Reviews
+            Individual Reviews in {city.name}
           </h3>
+          <p className="text-xs text-gray-500 mt-1">
+            Each review represents a specific location within this area
+          </p>
         </div>
 
         <div className="space-y-4">
@@ -281,7 +330,21 @@ export function CityPanel({ city, reviews, onReviewSubmit, onClose, isMobile = f
               </p>
             </div>
           ) : (
-            reviews.map((review) => <ReviewCard key={review.id} review={review} />)
+            <>
+              {visibleReviews.map((review) => (
+                <ReviewCard 
+                  key={review.id} 
+                  review={review} 
+                  isHighlighted={selectedReviewId === review.id}
+                  onClick={() => onReviewClick?.(review)}
+                />
+              ))}
+              {visibleReviewsCount < reviews.length && (
+                <div className="py-4 text-center text-sm text-gray-500">
+                  Showing {visibleReviewsCount} of {reviews.length} reviews. Scroll for more...
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -346,12 +409,75 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function ReviewCard({ review }: { review: Review }) {
+function ReviewCard({ review, isHighlighted = false, onClick }: { review: Review; isHighlighted?: boolean; onClick?: () => void }) {
   // Memoize formatted date to avoid recalculating on every render
   const formattedDate = useMemo(() => formatDate(review.createdAt), [review.createdAt]);
+  const [fetchedLocationName, setFetchedLocationName] = useState<string>("");
+  
+  // Use cached location data from database, or fetch if missing
+  const cachedLocationName = useMemo(() => {
+    if (review.streetAddress && review.locationName) {
+      return `${review.streetAddress}, ${review.locationName}`;
+    }
+    if (review.streetAddress) return review.streetAddress;
+    if (review.locationName) return review.locationName;
+    return null;
+  }, [review.streetAddress, review.locationName]);
+
+  // Fetch location if not cached in database
+  useEffect(() => {
+    if (cachedLocationName || fetchedLocationName) return;
+    
+    const fetchLocation = async () => {
+      try {
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${review.latitude}&lon=${review.longitude}&zoom=18&addressdetails=1`,
+          {
+            headers: {
+              'User-Agent': 'TapWaterRating/1.0',
+              'Accept-Language': 'en,sr-Latn,bs,hr,sl,sq'
+            }
+          }
+        );
+        
+        if (!response.ok) {
+          console.warn('Geocoding failed with status:', response.status);
+          return;
+        }
+        
+        const data = await response.json();
+        
+        const address = data.address;
+        if (address) {
+          const parts = [];
+          if (address.road) parts.push(address.road);
+          if (address.neighbourhood || address.suburb) parts.push(address.neighbourhood || address.suburb);
+          if (parts.length > 0) {
+            setFetchedLocationName(parts.join(", "));
+          } else if (address.city || address.town || address.village) {
+            setFetchedLocationName(address.city || address.town || address.village);
+          }
+        }
+      } catch (error) {
+        console.warn("Failed to fetch location name:", error);
+        // Silently fail - will show coordinates as fallback
+      }
+    };
+    
+    fetchLocation();
+  }, [review.latitude, review.longitude, cachedLocationName, fetchedLocationName]);
+
+  const locationName = cachedLocationName || fetchedLocationName;
   
   return (
-    <div className="rounded-3xl bg-white/60 p-5 backdrop-blur-md transition-all hover:bg-white/70">
+    <div 
+      onClick={onClick}
+      className={`rounded-3xl p-5 backdrop-blur-md transition-all cursor-pointer ${
+        isHighlighted 
+          ? 'bg-blue-100/80 ring-2 ring-blue-500 shadow-lg' 
+          : 'bg-white/60 hover:bg-white/70'
+      }`}
+    >
       <div className="flex items-start justify-between gap-4">
         <div className="flex gap-6">
           <div className="text-center">
@@ -393,8 +519,20 @@ function ReviewCard({ review }: { review: Review }) {
             <p className="mt-1 text-sm text-gray-600">Taste</p>
           </div>
         </div>
-        <div className="text-right text-xs text-gray-600">
-          <p>{formattedDate}</p>
+        <div className="text-right">
+          {locationName && (
+            <div className="text-xs text-gray-700 mb-1 font-medium max-w-[150px] text-right">
+              📍 {locationName}
+            </div>
+          )}
+          {!locationName && (
+            <div className="text-xs text-gray-500 mb-1">
+              📍 {review.latitude.toFixed(4)}, {review.longitude.toFixed(4)}
+            </div>
+          )}
+          <div className="text-xs text-gray-600">
+            {formattedDate}
+          </div>
         </div>
       </div>
 

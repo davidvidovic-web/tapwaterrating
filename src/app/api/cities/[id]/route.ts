@@ -2,6 +2,12 @@ import { db } from "@/db/client";
 import { cities, reviews } from "@/db/schema";
 import { and, desc, eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+
+const updateCitySchema = z.object({
+  latitude: z.number(),
+  longitude: z.number(),
+});
 
 export async function GET(
   _request: NextRequest,
@@ -32,5 +38,47 @@ export async function GET(
   } catch (error) {
     console.error("Error fetching city:", error);
     return NextResponse.json({ error: "Failed to fetch city" }, { status: 500 });
+  }
+}
+
+export async function PATCH(
+  request: NextRequest,
+  props: { params: Promise<{ id: string }> }
+) {
+  const params = await props.params;
+  const { id } = params;
+
+  if (!db) {
+    return NextResponse.json({ error: "Database not available" }, { status: 503 });
+  }
+
+  try {
+    const body = await request.json();
+    const data = updateCitySchema.safeParse(body);
+
+    if (!data.success) {
+      return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+    }
+
+    // Update the city coordinates
+    await db
+      .update(cities)
+      .set({
+        latitude: data.data.latitude,
+        longitude: data.data.longitude,
+        lastUpdated: new Date(),
+      })
+      .where(eq(cities.id, id));
+
+    return NextResponse.json({ 
+      success: true, 
+      message: "City updated successfully" 
+    });
+  } catch (error) {
+    console.error("Error updating city:", error);
+    return NextResponse.json(
+      { error: "Failed to update city" },
+      { status: 500 }
+    );
   }
 }

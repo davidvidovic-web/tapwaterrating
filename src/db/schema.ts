@@ -56,6 +56,8 @@ export const users = sqliteTable("users", {
   email: text("email").notNull().unique(),
   emailVerified: integer("email_verified", { mode: "timestamp_ms" }),
   image: text("image"),
+  password: text("password"), // For credentials-based login
+  role: text("role", { enum: ["user", "admin"] }).default("user"),
   reviewCount: integer("review_count").default(0),
   isVerified: integer("is_verified", { mode: "boolean" }).default(false),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).$defaultFn(
@@ -122,6 +124,8 @@ export const reviews = sqliteTable(
       .references(() => users.id, { onDelete: "cascade" }),
     latitude: real("latitude").notNull(),
     longitude: real("longitude").notNull(),
+    streetAddress: text("street_address"),
+    locationName: text("location_name"),
     tasteRating: integer("taste_rating").notNull(),
     safetyRating: integer("safety_rating").notNull(),
     phLevel: real("ph_level"),

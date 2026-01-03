@@ -53,7 +53,7 @@ export const metadata: Metadata = {
     description: "Discover tap water quality and safety ratings for cities worldwide. Community-driven reviews and official safety data.",
     images: [
       {
-        url: "/save-water.png",
+        url: "/save-glass.png",
         width: 1200,
         height: 630,
         alt: "Tap Water Rating - Check Water Safety",
@@ -64,7 +64,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Tap Water Rating - Check Tap Water Safety Worldwide",
     description: "Discover tap water quality and safety ratings for cities worldwide. Community-driven reviews and official safety data.",
-    images: ["/save-water.png"],
+    images: ["/save-glass.png"],
     creator: "@tapwaterrating",
   },
   robots: {

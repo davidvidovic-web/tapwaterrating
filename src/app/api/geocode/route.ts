@@ -47,6 +47,9 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Get the most specific result (first one) for street address
+    const specificResult = data.results[0];
+
     // Find the city-level result (ignore neighborhoods, streets, etc.)
     // Priority: locality (city) > administrative_area_level_2 (county/district)
     let cityResult = data.results.find((result: { types: string[] }) =>
@@ -71,9 +74,25 @@ export async function GET(request: NextRequest) {
       cityResult = data.results[0]; // Fallback to first result
     }
 
-    console.log('Selected result types:', cityResult.types);
+    console.log('Selected city result types:', cityResult.types);
+    console.log('Most specific result types:', specificResult.types);
 
-    // Extract city name, country, and country code from address components
+    // Extract street address from the most specific result
+    let streetNumber = "";
+    let route = "";
+    let neighborhood = "";
+
+    for (const component of specificResult.address_components) {
+      if (component.types.includes("street_number")) {
+        streetNumber = component.long_name;
+      } else if (component.types.includes("route")) {
+        route = component.long_name;
+      } else if (component.types.includes("neighborhood") || component.types.includes("sublocality")) {
+        neighborhood = component.long_name;
+      }
+    }
+
+    // Extract city name, country, and country code from city result
     let cityName = "";
     let country = "";
     let countryCode = "";
@@ -104,16 +123,37 @@ export async function GET(request: NextRequest) {
     }
 
     console.log('Extracted city:', cityName, country);
+    console.log('Street address:', streetNumber, route, 'Neighborhood:', neighborhood);
+
+    // Build street address
+    let streetAddress = "";
+    if (streetNumber && route) {
+      streetAddress = `${streetNumber} ${route}`;
+    } else if (route) {
+      streetAddress = route;
+    } else if (neighborhood) {
+      // Use neighborhood if no street found
+      streetAddress = neighborhood;
+    } else if (!streetAddress && specificResult.formatted_address) {
+      // Use first part of formatted address as fallback
+      const addressParts = specificResult.formatted_address.split(",").map((p: string) => p.trim());
+      // Skip if it looks like just coordinates or very generic
+      if (addressParts[0] && !addressParts[0].match(/^[\d\s.,-]+$/)) {
+        streetAddress = addressParts[0];
+      }
+    }
 
     return NextResponse.json({
       name: cityName,
       country: country,
       countryCode: countryCode,
       state: state,
+      streetAddress: streetAddress,
+      neighborhood: neighborhood,
       latitude: parseFloat(lat),
       longitude: parseFloat(lng),
-      formattedAddress: cityResult.formatted_address,
-      placeId: cityResult.place_id,
+      formattedAddress: specificResult.formatted_address,
+      placeId: specificResult.place_id,
     });
   } catch (error) {
     console.error("Geocoding error:", error);

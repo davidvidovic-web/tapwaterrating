@@ -31,6 +31,7 @@ export async function GET(request: NextRequest) {
         },
         body: JSON.stringify({
           input,
+          languageCode: "en",
           includedPrimaryTypes: ["locality", "administrative_area_level_1", "administrative_area_level_2"],
         }),
       }

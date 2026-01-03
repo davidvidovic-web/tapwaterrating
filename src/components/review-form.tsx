@@ -8,7 +8,7 @@ import Image from "next/image";
 type Props = {
   city: City;
   onSuccess?: () => void;
-  customLocation?: { lat: number; lng: number } | null;
+  customLocation?: { lat: number; lng: number; streetAddress?: string; neighborhood?: string } | null;
 };
 
 export function ReviewForm({ city, onSuccess, customLocation }: Props) {
@@ -60,6 +60,9 @@ export function ReviewForm({ city, onSuccess, customLocation }: Props) {
         // Use custom location if available, otherwise use city coordinates
         latitude: customLocation?.lat ?? city.latitude,
         longitude: customLocation?.lng ?? city.longitude,
+        // Save geocoded location data if available
+        streetAddress: customLocation?.streetAddress,
+        locationName: customLocation?.neighborhood,
       };
 
       // If this is a new city (id === "-1"), include city information

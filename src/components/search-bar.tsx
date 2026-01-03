@@ -2,7 +2,7 @@
 
 import { City } from "@/db/schema";
 import { useEffect, useState } from "react";
-import { Search, MapPin, Loader2 } from "lucide-react";
+import { Search, MapPin, Loader2, X } from "lucide-react";
 import { useGeolocation } from "@/hooks/use-geolocation";
 // New Places API (V1) Response Type
 type GooglePlaceSuggestion = {
@@ -46,6 +46,14 @@ export function SearchBar({ cities, onSelect, onGeolocation, collapsed = false, 
   const [showError, setShowError] = useState(false);
 
   const debouncedQuery = useDebounce(query, 200);
+
+  // Auto-collapse when the collapsed prop becomes true
+  useEffect(() => {
+    if (collapsed && isExpanded) {
+      handleExpand(false);
+      setQuery("");
+    }
+  }, [collapsed]);
 
   useEffect(() => {
     if (latitude !== null && longitude !== null) {
@@ -171,7 +179,23 @@ export function SearchBar({ cities, onSelect, onGeolocation, collapsed = false, 
               className="w-full bg-transparent text-sm font-medium text-gray-900 placeholder:text-gray-600 focus:outline-none"
               autoFocus={isExpanded}
             />
-            {isLoading && <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-gray-400 border-t-gray-700" />}
+            {query && (
+              <button
+                onClick={() => {
+                  setQuery("");
+                  setResults([]);
+                }}
+                className="mr-2 flex items-center justify-center rounded-full p-1 text-gray-600 transition-colors hover:bg-black/5 hover:text-gray-900"
+                title="Clear search"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+            {isLoading && (
+              <div className="mr-2 flex h-4 w-4 flex-shrink-0 items-center justify-center">
+                <div className="h-full w-full animate-spin rounded-full border-2 border-gray-300 border-t-blue-600" />
+              </div>
+            )}
           </>
         )}
         
@@ -208,7 +232,7 @@ export function SearchBar({ cities, onSelect, onGeolocation, collapsed = false, 
                 <li key={`city-${city.id}`}>
                   <button
                     type="button"
-                    className="flex w-full items-center justify-between px-4 py-3 text-left text-sm transition-colors hover:bg-white/40"
+                    className="mx-2 flex w-[calc(100%-1rem)] items-center justify-between rounded-xl px-4 py-3 text-left text-sm transition-colors hover:bg-white/40"
                     onClick={() => {
                       onSelect(city);
                       setQuery("");
@@ -235,7 +259,7 @@ export function SearchBar({ cities, onSelect, onGeolocation, collapsed = false, 
                 <li key={`google-${placeId}`}>
                   <button
                     type="button"
-                    className="flex w-full items-center justify-between px-4 py-3 text-left text-sm transition-colors hover:bg-white/40"
+                    className="mx-2 flex w-[calc(100%-1rem)] items-center justify-between rounded-xl px-4 py-3 text-left text-sm transition-colors hover:bg-white/40"
                     onClick={async () => {
                       setIsLoading(true);
                       try {

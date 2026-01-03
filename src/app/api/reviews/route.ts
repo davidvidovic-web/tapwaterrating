@@ -12,6 +12,8 @@ const reviewSchema = z.object({
   cityCountryCode: z.string().optional(), // For new cities not in database
   latitude: z.number(),
   longitude: z.number(),
+  streetAddress: z.string().optional(),
+  locationName: z.string().optional(),
   tasteRating: z.number().min(1).max(5),
   safetyRating: z.number().min(1).max(5),
   reviewText: z.string().max(1000).optional(),
@@ -21,6 +23,32 @@ const reviewSchema = z.object({
   waterSource: z.string().optional(),
   treatmentProcess: z.string().optional(),
 });
+
+export async function GET(request: NextRequest) {
+  const searchParams = request.nextUrl.searchParams;
+  const limit = parseInt(searchParams.get("limit") || "1000");
+  const showAll = searchParams.get("showAll") === "true";
+
+  if (!db) {
+    return NextResponse.json({ error: "Database not available" }, { status: 503 });
+  }
+
+  try {
+    const query = db
+      .select()
+      .from(reviews);
+    
+    // Only filter by isPublished if showAll is not set
+    const allReviews = showAll
+      ? await query.limit(Math.min(limit, 1000))
+      : await query.where(eq(reviews.isPublished, true)).limit(Math.min(limit, 1000));
+
+    return NextResponse.json(allReviews);
+  } catch (error) {
+    console.error("Error fetching reviews:", error);
+    return NextResponse.json({ error: "Failed to fetch reviews" }, { status: 500 });
+  }
+}
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
@@ -56,15 +84,43 @@ export async function POST(request: NextRequest) {
       if (existingCity.length > 0) {
         actualCityId = existingCity[0].id;
       } else {
-        // Create new city
+        // Fetch proper city center coordinates from Nominatim
+        let cityLat = Math.round(payload.latitude * 100) / 100;
+        let cityLon = Math.round(payload.longitude * 100) / 100;
+        
+        try {
+          // Use Nominatim Search API to get canonical city center
+          const nominatimResponse = await fetch(
+            `https://nominatim.openstreetmap.org/search?city=${encodeURIComponent(payload.cityName)}&country=${encodeURIComponent(payload.cityCountry)}&format=json&limit=1&accept-language=en`,
+            {
+              headers: {
+                'User-Agent': 'TapWaterRating/1.0',
+                'Accept-Language': 'en'
+              }
+            }
+          );
+
+          if (nominatimResponse.ok) {
+            const results = await nominatimResponse.json();
+            if (results && results.length > 0) {
+              // Use the canonical city center from Nominatim
+              cityLat = parseFloat(results[0].lat);
+              cityLon = parseFloat(results[0].lon);
+            }
+          }
+        } catch (error) {
+          console.error('Failed to fetch city center from Nominatim:', error);
+          // Fall back to rounded coordinates if geocoding fails
+        }
+        
         const newCityId = nanoid();
         await db.insert(cities).values({
           id: newCityId,
           name: payload.cityName,
           country: payload.cityCountry,
           countryCode: payload.cityCountryCode || "XX",
-          latitude: payload.latitude,
-          longitude: payload.longitude,
+          latitude: cityLat,
+          longitude: cityLon,
           safetyRating: 0,
           officialStatus: "unknown",
           avgSafetyRating: 0,
@@ -90,6 +146,8 @@ export async function POST(request: NextRequest) {
       userId: "anonymous",
       latitude: payload.latitude,
       longitude: payload.longitude,
+      streetAddress: payload.streetAddress ?? null,
+      locationName: payload.locationName ?? null,
       tasteRating: payload.tasteRating,
       safetyRating: payload.safetyRating,
       phLevel: payload.phLevel ?? null,

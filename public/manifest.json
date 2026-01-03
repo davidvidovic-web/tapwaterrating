@@ -9,15 +9,20 @@
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "src": "/favicon.svg",
+      "sizes": "32x32",
+      "type": "image/svg+xml"
     },
     {
       "src": "/apple-touch-icon.svg",
       "sizes": "180x180",
       "type": "image/svg+xml"
+    },
+    {
+      "src": "/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
     }
   ],
   "categories": ["utilities", "travel", "lifestyle"],
