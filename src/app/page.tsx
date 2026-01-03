@@ -572,7 +572,7 @@ export default function Home() {
             exit={{ y: "100%" }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
             className="fixed bottom-0 left-0 right-0 z-20 flex flex-col bg-white shadow-2xl"
-            style={{ borderRadius: drawerFullScreen ? "0" : "1.5rem 1.5rem 0 0" }}
+            style={{ borderRadius: drawerFullScreen ? "0" : drawerExpanded ? "0.5rem 0.5rem 0 0" : "1.5rem 1.5rem 0 0" }}
           >
             {/* Drawer Handle - Hidden when full screen */}
             {!drawerFullScreen && (
