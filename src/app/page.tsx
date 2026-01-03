@@ -378,6 +378,8 @@ export default function Home() {
     handleContentTouchStart,
     handleContentTouchMove,
     handleContentTouchEnd,
+    selectedCity,
+    isMobile,
   ]);
 
   const handleDrawerWheel = (e: React.WheelEvent) => {
@@ -739,17 +741,11 @@ export default function Home() {
         ref={searchBarRef}
         style={layoutStyles.get(searchBarRef)}
         className={`
-        absolute left-1/2 flex w-full -translate-x-1/2 flex-row items-center gap-3 px-4 z-10
+        absolute left-1/2 top-[15px] flex w-full -translate-x-1/2 flex-row items-center gap-3 px-4 z-10
         transition-all duration-300 ease-out
         ${selectedCity && !searchExpanded ? "max-w-[120px]" : "max-w-xl"}
-        ${drawerExpanded ? "-translate-y-1/2" : ""}
       `}
         animate={{
-          top:
-            selectedCity && isMobile && drawerExpanded
-              ? "5vh" // Center in the small map area when drawer is expanded
-              : "24px", // Normal top position for all other states
-          y: 0,
           opacity: 1,
         }}
         transition={{ type: "tween", duration: 0.4, ease: "easeInOut" }}
