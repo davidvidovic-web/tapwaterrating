@@ -1,5 +1,5 @@
 {
-  "name": "Tap Water Rating",
+  "name": "TapWaterRating",
   "short_name": "TWR",
   "description": "Check tap water safety and quality by city worldwide",
   "start_url": "/",
@@ -14,9 +14,10 @@
       "type": "image/svg+xml"
     },
     {
-      "src": "/apple-touch-icon.svg",
-      "sizes": "180x180",
-      "type": "image/svg+xml"
+      "src": "/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
     },
     {
       "src": "/icon-512.svg",

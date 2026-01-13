@@ -3,7 +3,7 @@ import { cities, reviews } from "@/db/schema";
 import { nanoid } from "nanoid";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, sql, desc } from "drizzle-orm";
 
 const reviewSchema = z.object({
   cityId: z.string(),
@@ -36,7 +36,8 @@ export async function GET(request: NextRequest) {
   try {
     const query = db
       .select()
-      .from(reviews);
+      .from(reviews)
+      .orderBy(desc(reviews.createdAt));
     
     // Only filter by isPublished if showAll is not set
     const allReviews = showAll

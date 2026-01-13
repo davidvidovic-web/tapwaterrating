@@ -11,8 +11,6 @@ export async function GET(request: NextRequest) {
       { status: 400 }
     );
   }
-  
-  console.log('Geocoding request for:', lat, lng);
 
   try {
     // Use Nominatim reverse geocoding
@@ -24,23 +22,23 @@ export async function GET(request: NextRequest) {
           lon: lng,
           format: "json",
           addressdetails: "1",
+          extratags: "1",
+          "accept-language": "en",
           zoom: "18", // Most detailed level
         }),
       {
         headers: {
           "User-Agent": "TapWaterRating/1.0",
+          "Accept-Language": "en",
         },
       }
     );
-
-    console.log('Nominatim API response status:', response.status);
 
     if (!response.ok) {
       throw new Error("Geocoding API request failed");
     }
 
     const data = await response.json();
-    console.log('Nominatim API response:', data);
 
     if (!data || data.error) {
       console.error('Geocoding error:', data.error);
@@ -52,15 +50,18 @@ export async function GET(request: NextRequest) {
 
     // Extract address components from Nominatim response
     const address = data.address || {};
+    const extratags = data.extratags || {};
     
-    // Get city name (try multiple fields in order of preference)
-    const cityName = address.city || 
+    // Get city name (prefer English name if available)
+    const cityName = extratags['name:en'] ||
+                     address.city || 
                      address.town || 
                      address.village || 
                      address.municipality ||
                      address.county ||
                      address.state_district ||
                      address.state ||
+                     data.namedetails?.['name:en'] ||
                      data.name;
     
     const country = address.country || "";
@@ -81,9 +82,6 @@ export async function GET(request: NextRequest) {
     }
     
     const neighborhood = address.neighbourhood || address.suburb || "";
-
-    console.log('Extracted city:', cityName, country);
-    console.log('Street address:', streetAddress, 'Neighborhood:', neighborhood);
 
     return NextResponse.json({
       name: cityName,

@@ -34,71 +34,79 @@ const MapLoadingScreen = () => {
     return () => clearInterval(interval);
   }, []);
 
-  if (typeof document === 'undefined') return null;
+  if (typeof document === "undefined") return null;
 
   const loadingContent = (
-      <div className="fixed inset-0 flex items-center justify-center bg-gradient-to-br from-blue-50 via-cyan-50 to-blue-100" style={{ zIndex: 9999999 }}>
-        <div className="flex flex-col items-center gap-10">
-          {/* Animated water waves */}
-          <div className="relative">
-            {/* Background circles creating ripple effect */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div
-                className="h-20 w-20 rounded-full bg-blue-400/20 animate-ping"
-                style={{ animationDuration: "2s" }}
-              ></div>
-            </div>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div
-                className="h-16 w-16 rounded-full bg-blue-500/20 animate-ping"
-                style={{ animationDuration: "2s", animationDelay: "0.5s" }}
-              ></div>
-            </div>
-
-            {/* Center droplets icon */}
-            <div className="relative z-10 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 p-5 shadow-lg">
-              <Droplets className="h-10 w-10 text-white animate-pulse" />
-            </div>
+    <div
+      className="fixed inset-0 flex items-center justify-center bg-gradient-to-br from-blue-50 via-cyan-50 to-blue-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950"
+      style={{ zIndex: 9999999 }}
+    >
+      <div className="flex flex-col items-center gap-10">
+        {/* Animated water waves */}
+        <div className="relative">
+          {/* Background circles creating ripple effect */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div
+              className="h-20 w-20 rounded-full bg-blue-400/20 animate-ping"
+              style={{ animationDuration: "2s" }}
+            ></div>
+          </div>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div
+              className="h-16 w-16 rounded-full bg-blue-500/20 animate-ping"
+              style={{ animationDuration: "2s", animationDelay: "0.5s" }}
+            ></div>
           </div>
 
-          {/* Loading text */}
-          <div className="flex flex-col items-center gap-4 w-64">
-            <span className="text-xl font-bold text-gray-800">Loading Map</span>
+          {/* Center droplets icon */}
+          <div className="relative z-10 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 p-5 shadow-lg">
+            <Droplets className="h-10 w-10 text-white animate-pulse" />
+          </div>
+        </div>
 
-            {/* Progress bar */}
-            <div className="w-full">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-xs font-medium text-gray-700">
-                  Preparing water quality data...
-                </span>
-                <span className="text-xs font-bold text-blue-600">
-                  {Math.round(progress)}%
-                </span>
-              </div>
-              <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full transition-all duration-300 ease-out"
-                  style={{ width: `${progress}%` }}
-                ></div>
-              </div>
+        {/* Loading text */}
+        <div className="flex flex-col items-center gap-4 w-64">
+          <span className="text-xl font-bold text-gray-800 dark:text-gray-200">
+            Loading Map
+          </span>
+
+          {/* Progress bar */}
+          <div className="w-full">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-xs font-medium text-gray-700 dark:text-gray-400">
+                Preparing water quality data...
+              </span>
+              <span className="text-xs font-bold text-blue-600 dark:text-blue-400">
+                {Math.round(progress)}%
+              </span>
+            </div>
+            <div className="w-full h-2 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 dark:from-blue-600 dark:to-cyan-600 rounded-full transition-all duration-300 ease-out"
+                style={{ width: `${progress}%` }}
+              ></div>
             </div>
           </div>
         </div>
       </div>
+    </div>
   );
 
   return createPortal(loadingContent, document.body);
 };
 
-const MapComponent = dynamic(() => import("@/components/map").then((mod) => mod.Map), {
-  ssr: false,
-  loading: MapLoadingScreen,
-});
+const MapComponent = dynamic(
+  () => import("@/components/map").then((mod) => mod.Map),
+  {
+    ssr: false,
+    loading: MapLoadingScreen,
+  }
+);
 
 const Map = (props: any) => {
   const { onMapLoaded, ...otherProps } = props;
   const mapRef = React.useRef<any>(null);
-  
+
   React.useEffect(() => {
     // Only call onMapLoaded after a short delay to ensure MapComponent has rendered
     const timer = setTimeout(() => {
@@ -106,10 +114,10 @@ const Map = (props: any) => {
         onMapLoaded();
       }
     }, 100);
-    
+
     return () => clearTimeout(timer);
   }, [onMapLoaded]);
-  
+
   return <MapComponent ref={mapRef} {...otherProps} />;
 };
 
@@ -173,11 +181,11 @@ function findNearestCity(
 export default function Home() {
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mounted, setMounted] = useState(false);
-  
+
   useEffect(() => {
     setMounted(true);
   }, []);
-  
+
   const { data: cityList, mutate: mutateCityList } = useSWR<City[]>(
     "/api/cities?limit=100",
     fetcher
@@ -479,7 +487,7 @@ export default function Home() {
     setCustomLocation(null); // Clear any custom location
     setDrawerExpanded(false); // Collapse drawer when new city is selected
     setDrawerScrolled(false); // Reset scroll state
-    
+
     // If this is an unrated city (from search autocomplete), treat it like a pin click
     // This will open the review form for the user
     if (city.id === "-1") {
@@ -697,100 +705,97 @@ export default function Home() {
   return (
     <div className="relative h-screen w-screen overflow-hidden">
       {/* Global loading screen - shown until map loads */}
-      {mounted && !mapLoaded && createPortal(
-        <div className="fixed inset-0 flex items-center justify-center bg-gradient-to-br from-blue-50 via-cyan-50 to-blue-100" style={{ zIndex: 9999999 }}>
-          <div className="flex flex-col items-center gap-10">
-            {/* Animated water waves */}
-            <div className="relative">
-              {/* Background circles creating ripple effect */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div
-                  className="h-20 w-20 rounded-full bg-blue-400/20 animate-ping"
-                  style={{ animationDuration: "2s" }}
-                ></div>
-              </div>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div
-                  className="h-16 w-16 rounded-full bg-blue-500/20 animate-ping"
-                  style={{ animationDuration: "2s", animationDelay: "0.5s" }}
-                ></div>
+      {mounted &&
+        !mapLoaded &&
+        createPortal(
+          <div
+            className="fixed inset-0 flex items-center justify-center bg-gradient-to-br from-blue-50 via-cyan-50 to-blue-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950"
+            style={{ zIndex: 9999999 }}
+          >
+            <div className="flex flex-col items-center gap-10">
+              {/* Animated water waves */}
+              <div className="relative">
+                {/* Background circles creating ripple effect */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div
+                    className="h-20 w-20 rounded-full bg-blue-400/20 animate-ping"
+                    style={{ animationDuration: "2s" }}
+                  ></div>
+                </div>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div
+                    className="h-16 w-16 rounded-full bg-blue-500/20 animate-ping"
+                    style={{ animationDuration: "2s", animationDelay: "0.5s" }}
+                  ></div>
+                </div>
+
+                {/* Center droplets icon */}
+                <div className="relative z-10 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 p-5 shadow-lg">
+                  <Droplets className="h-10 w-10 text-white animate-pulse" />
+                </div>
               </div>
 
-              {/* Center droplets icon */}
-              <div className="relative z-10 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 p-5 shadow-lg">
-                <Droplets className="h-10 w-10 text-white animate-pulse" />
+              {/* Loading text */}
+              <div className="flex flex-col items-center gap-4 w-64">
+                <span className="text-xl font-bold text-gray-800 dark:text-gray-200">
+                  Loading Map
+                </span>
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  Preparing water quality data...
+                </span>
               </div>
             </div>
+          </div>,
+          document.body
+        )}
 
-            {/* Loading text */}
-            <div className="flex flex-col items-center gap-4 w-64">
-              <span className="text-xl font-bold text-gray-800">Loading Map</span>
-              <span className="text-sm text-gray-600">Preparing water quality data...</span>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-      
       {/* Preload map tiles for LCP optimization */}
       <MapTilePreload />
 
       {/* Logo - Bottom Left - Hidden on mobile when drawer is open or during loading */}
-      {mounted && mapLoaded && (!isMobile || !selectedCity) && cities && cities.length > 0 && (
-        <div
-          ref={logoRef}
-          style={layoutStyles.get(logoRef)}
-          className="absolute left-4 bottom-4 z-10 rounded-full border border-white/40 bg-white/60 px-4 py-2 shadow-lg backdrop-blur-xl transition-all hover:bg-white/80 hover:shadow-xl"
-        >
-          <Logo />
-        </div>
-      )}
+      {mounted &&
+        mapLoaded &&
+        (!isMobile || !selectedCity) &&
+        cities &&
+        cities.length > 0 && (
+          <div
+            ref={logoRef}
+            style={layoutStyles.get(logoRef)}
+            className="absolute left-4 bottom-4 z-10"
+          >
+            <Logo />
+          </div>
+        )}
 
       {/* Search Bar - Floating */}
       {mounted && mapLoaded && (
-      <motion.div
-        ref={searchBarRef}
-        style={layoutStyles.get(searchBarRef)}
-        className={`
+        <motion.div
+          ref={searchBarRef}
+          style={layoutStyles.get(searchBarRef)}
+          className={`
         absolute left-1/2 top-[15px] flex w-full -translate-x-1/2 flex-row items-center gap-3 px-4 z-10
         transition-all duration-300 ease-out
         ${!searchExpanded ? "max-w-[120px]" : "max-w-xl"}
       `}
-        animate={{
-          opacity: 1,
-        }}
-        transition={{ type: "tween", duration: 0.4, ease: "easeInOut" }}
-      >
-        <div className="flex-1">
-          <SearchBar
-            cities={cities}
-            onSelect={handleCitySelect}
-            onGeolocation={handleGeolocation}
-            collapsed={true}
-            onExpandChange={setSearchExpanded}
-          />
-        </div>
-      </motion.div>
+          animate={{
+            opacity: 1,
+          }}
+          transition={{ type: "tween", duration: 0.4, ease: "easeInOut" }}
+        >
+          <div className="flex-1">
+            <SearchBar
+              cities={cities}
+              onSelect={handleCitySelect}
+              onGeolocation={handleGeolocation}
+              collapsed={true}
+              onExpandChange={setSearchExpanded}
+            />
+          </div>
+        </motion.div>
       )}
 
-      {/* Map - Responsive to mobile drawer */}
-      <motion.div
-        className={
-          selectedCity && isMobile
-            ? "absolute top-0 left-0 right-0 z-0"
-            : "absolute inset-0 z-0"
-        }
-        animate={{
-          bottom:
-            selectedCity && isMobile
-              ? drawerExpanded
-                ? DRAWER_EXPANDED_HEIGHT
-                : DRAWER_COLLAPSED_HEIGHT
-              : 0,
-          y: 0,
-        }}
-        transition={{ type: "tween", duration: 0.4, ease: "easeInOut" }}
-      >
+      {/* Map - Full screen, drawer overlays on mobile */}
+      <div className="absolute inset-0 z-0">
         <Map
           cities={cities}
           reviews={reviewsOnMap}
@@ -807,7 +812,7 @@ export default function Home() {
           shouldFlyToCity={shouldFlyToCity}
           onMapLoaded={() => setMapLoaded(true)}
         />
-      </motion.div>
+      </div>
 
       {/* Mobile Drawer - Only on mobile */}
       <AnimatePresence>
@@ -825,7 +830,7 @@ export default function Home() {
             }}
             exit={{ y: "100%" }}
             transition={{ type: "tween", duration: 0.4, ease: "easeInOut" }}
-            className="fixed bottom-0 left-0 right-0 z-20 flex flex-col bg-white shadow-2xl"
+            className="glass-panel backdrop-blur fixed bottom-0 left-0 right-0 z-20 flex flex-col"
             style={{
               borderRadius: drawerExpanded
                 ? "0.5rem 0.5rem 0 0"
@@ -837,17 +842,19 @@ export default function Home() {
             {/* Drawer Handle */}
             <div
               ref={drawerHandleRef}
-              className={`flex h-12 w-full cursor-pointer items-center justify-center flex-shrink-0 select-none transition-all duration-300 ${
+              className={`flex h-12 w-full cursor-pointer items-center justify-center flex-shrink-0 select-none transition-all duration-300 bg-transparent ${
                 drawerScrolled
-                  ? "bg-gray-50 border-b border-gray-200"
-                  : "bg-white"
+                  ? "border-b border-gray-200 dark:border-gray-700"
+                  : ""
               }`}
               onClick={toggleDrawer}
               onWheel={handleDrawerWheel}
             >
               <div
                 className={`h-1 w-10 rounded-sm pointer-events-none transition-all duration-300 ${
-                  drawerScrolled ? "bg-blue-400 w-12" : "bg-gray-400"
+                  drawerScrolled
+                    ? "bg-blue-400 dark:bg-blue-500 w-12"
+                    : "bg-gray-400 dark:bg-gray-600"
                 }`}
               ></div>
             </div>
@@ -878,6 +885,9 @@ export default function Home() {
                 customLocation={customLocation}
                 selectedReviewId={selectedReviewId}
                 onReviewClick={handleReviewSelect}
+                isLoading={
+                  !!selectedCity && selectedCity.id !== "-1" && !cityDetails
+                }
               />
             </div>
           </motion.div>
@@ -890,7 +900,7 @@ export default function Home() {
           ref={desktopPanelRef}
           style={layoutStyles.get(desktopPanelRef)}
           className={`
-            absolute overflow-hidden rounded-4xl border border-white/20 bg-white/60 shadow-2xl backdrop-blur-2xl
+            glass-panel backdrop-blur glass-panel-rounded absolute overflow-hidden
             transition-all duration-300 ease-out
             
             left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-md lg:w-96
@@ -914,6 +924,9 @@ export default function Home() {
               customLocation={customLocation}
               selectedReviewId={selectedReviewId}
               onReviewClick={handleReviewSelect}
+              isLoading={
+                !!selectedCity && selectedCity.id !== "-1" && !cityDetails
+              }
             />
           </div>
         </div>

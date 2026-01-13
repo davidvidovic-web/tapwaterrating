@@ -41,26 +41,26 @@ function MapController({ selectedCity, shouldFly }: { selectedCity?: City | null
       );
       
       // Determine zoom level based on distance
-      // For search results, zoom in very close (16-17 for street-level view)
+      // For search results and geolocation, zoom in close for detailed view
       let targetZoom: number;
       if (distance < 0.01) {
         // Very close (< ~1km): zoom to street level
         targetZoom = 17;
       } else if (distance < 0.1) {
         // Close (< ~11km): zoom to neighborhood level
-        targetZoom = 15;
+        targetZoom = 16;
       } else if (distance < 1) {
         // Medium close (< ~111km): zoom to city level
-        targetZoom = 13;
+        targetZoom = 15;
       } else if (distance < 5) {
-        // Medium distance (< ~555km): zoom to 10
-        targetZoom = 10;
+        // Medium distance (< ~555km): zoom to 13
+        targetZoom = 14;
       } else if (distance < 20) {
-        // Far (< ~2220km): zoom to 8
-        targetZoom = 8;
+        // Far (< ~2220km): zoom to 12
+        targetZoom = 13;
       } else {
-        // Very far: zoom to 6
-        targetZoom = 6;
+        // Very far: zoom to 10
+        targetZoom = 12;
       }
       
       map.flyTo([selectedCity.latitude, selectedCity.longitude], targetZoom, {
@@ -174,25 +174,44 @@ export const Map = forwardRef<MapHandle, Props>(({ cities, reviews = [], onSelec
       return bCount - aCount;
     });
 
+    // Calculate minimum review threshold based on zoom level
+    // At low zoom, only show cities with many reviews. At high zoom, show all cities
+    const getMinReviewThreshold = (zoom: number) => {
+      if (zoom < 4) return 3;    // Only show cities with 3+ reviews (world level)
+      if (zoom < 6) return 2;    // Show cities with 2+ reviews (continent level)
+      if (zoom < 8) return 1;    // Show cities with 1+ reviews (country level)
+      return 0;                  // Show all cities with reviews (region/city level)
+    };
+
     // Calculate distance threshold based on zoom level
     // At low zoom, markers need to be far apart. At high zoom, they can be close
     const getDistanceThreshold = (zoom: number) => {
       if (zoom < 5) return 3.0;   // Very far apart (country level)
       if (zoom < 7) return 1.5;   // Far apart (region level)
-      return 0.5;                 // Medium distance (state/province level)
+      if (zoom < 9) return 0.8;   // Medium distance (state/province level)
+      return 0.3;                 // Close together (city level)
     };
 
+    const minReviewThreshold = getMinReviewThreshold(zoomLevel);
     const distanceThreshold = getDistanceThreshold(zoomLevel);
+    
+    // Filter cities by review count threshold
+    const prominentCities = sortedCities.filter(city => {
+      const reviewCount = city.reviewCount || reviews.filter(r => r.cityId === city.id).length;
+      return reviewCount >= minReviewThreshold;
+    });
+    
     const visibleCities: City[] = [];
     
-    // Always include selected city
+    // Always include selected city (even if below threshold)
     if (selectedCity && citiesWithReviews.find(c => c.id === selectedCity.id)) {
       visibleCities.push(selectedCity);
     }
 
     // Add cities that are far enough from already visible cities
-    for (const city of sortedCities) {
-      if (visibleCities.find(c => c.id === city.id)) continue; // Skip if already added
+    for (const city of prominentCities) {
+      // Skip if already added (including selected city)
+      if (visibleCities.find(c => c.id === city.id)) continue;
       
       // Check if this city is far enough from all visible cities
       const isFarEnough = visibleCities.every(visibleCity => {
@@ -208,7 +227,15 @@ export const Map = forwardRef<MapHandle, Props>(({ cities, reviews = [], onSelec
       }
     }
 
-    return visibleCities;
+    // Deduplicate by city ID to ensure no duplicates
+    const seenIds = new Set<string>();
+    const uniqueCities = visibleCities.filter(city => {
+      if (seenIds.has(city.id)) return false;
+      seenIds.add(city.id);
+      return true;
+    });
+
+    return uniqueCities;
   };
 
   const visibleCities = getVisibleCities();

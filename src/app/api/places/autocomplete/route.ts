@@ -20,11 +20,14 @@ export async function GET(request: NextRequest) {
           q: input,
           format: "json",
           addressdetails: "1",
+          extratags: "1",
+          "accept-language": "en",
           limit: "3",
         }),
       {
         headers: {
-          "User-Agent": "TapWaterRating/1.0", // Required by Nominatim usage policy
+          "User-Agent": "TapWaterRating/1.0",
+          "Accept-Language": "en",
         },
       }
     );
@@ -35,40 +38,48 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await response.json();
-    console.log("Nominatim raw response:", JSON.stringify(data, null, 2));
     
     if (!data || data.length === 0) {
-      console.log("No results from Nominatim for query:", input);
       return NextResponse.json({ suggestions: [] }, { status: 200 });
     }
     
     // Transform Nominatim response to match expected format
-    const suggestions = data.map((place: any) => ({
-      placePrediction: {
-        place: `nominatim/${place.place_id}`,
-        placeId: place.place_id.toString(),
-        text: {
-          text: place.display_name,
-          matches: [],
-        },
-        structuredFormat: {
-          mainText: { 
-            text: place.address?.city || place.address?.town || place.address?.village || place.name,
-            matches: [] 
+    const suggestions = data.map((place: any) => {
+      // Prefer English names if available
+      const extratags = place.extratags || {};
+      const cityName = extratags['name:en'] || 
+                       place.namedetails?.['name:en'] ||
+                       place.address?.city || 
+                       place.address?.town || 
+                       place.address?.village || 
+                       place.name;
+      
+      return {
+        placePrediction: {
+          place: `nominatim/${place.place_id}`,
+          placeId: place.place_id.toString(),
+          text: {
+            text: place.display_name,
+            matches: [],
           },
-          secondaryText: { 
-            text: [place.address?.state, place.address?.country].filter(Boolean).join(", ") 
+          structuredFormat: {
+            mainText: { 
+              text: cityName,
+              matches: [] 
+            },
+            secondaryText: { 
+              text: [place.address?.state, place.address?.country].filter(Boolean).join(", ") 
+            },
           },
+          location: {
+            lat: parseFloat(place.lat),
+            lng: parseFloat(place.lon),
+          },
+          address: place.address,
         },
-        location: {
-          lat: parseFloat(place.lat),
-          lng: parseFloat(place.lon),
-        },
-        address: place.address,
-      },
-    }));
+      };
+    });
 
-    console.log("Transformed suggestions:", suggestions.length);
     return NextResponse.json({ suggestions });
   } catch (error) {
     console.error("Nominatim Autocomplete error:", error);

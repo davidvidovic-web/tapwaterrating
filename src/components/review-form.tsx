@@ -2,8 +2,7 @@
 
 import { City } from "@/db/schema";
 import { useState } from "react";
-import { GlassWater, Send, Loader2 } from "lucide-react";
-import Image from "next/image";
+import { GlassWater, ShieldCheck, Send, Loader2 } from "lucide-react";
 
 type Props = {
   city: City;
@@ -146,17 +145,18 @@ export function ReviewForm({ city, onSuccess, customLocation }: Props) {
       <div className="space-y-6">
         {/* Safety Rating */}
         <div>
-          <label className="mb-2 block text-sm font-semibold text-gray-900">
+          <label className="mb-2 block text-sm font-semibold text-gray-900 dark:text-gray-100">
             Safety Rating <span className="text-red-500">*</span>
           </label>
           <div className="flex gap-1">
             {[1, 2, 3, 4, 5].map((level) => {
-              const getRatingFilter = (rating: number) => {
-                if (rating >= 5) return "invert(37%) sepia(93%) saturate(1352%) hue-rotate(195deg) brightness(91%) contrast(101%) drop-shadow(0 1px 2px rgba(0,0,0,0.15))"; // dark blue
-                if (rating >= 4) return "invert(70%) sepia(35%) saturate(679%) hue-rotate(169deg) brightness(96%) contrast(92%) drop-shadow(0 1px 2px rgba(0,0,0,0.15))"; // light blue
-                if (rating >= 3) return "invert(77%) sepia(61%) saturate(411%) hue-rotate(359deg) brightness(98%) contrast(92%) drop-shadow(0 1px 2px rgba(0,0,0,0.15))"; // yellow
-                if (rating >= 2) return "invert(58%) sepia(73%) saturate(1352%) hue-rotate(351deg) brightness(98%) contrast(97%) drop-shadow(0 1px 2px rgba(0,0,0,0.15))"; // orange
-                return "invert(27%) sepia(93%) saturate(4526%) hue-rotate(348deg) brightness(89%) contrast(93%) drop-shadow(0 1px 2px rgba(0,0,0,0.15))"; // red
+              // Colors match map marker colors exactly (same in light and dark mode)
+              const getRatingColorClass = (rating: number) => {
+                if (rating >= 5) return "text-blue-600";
+                if (rating >= 4) return "text-sky-500";
+                if (rating >= 3) return "text-yellow-500";
+                if (rating >= 2) return "text-orange-500";
+                return "text-red-500";
               };
               const currentRating = safetyHover || safetyRating;
               return (
@@ -168,44 +168,36 @@ export function ReviewForm({ city, onSuccess, customLocation }: Props) {
                   onMouseLeave={() => setSafetyHover(0)}
                   className="transition-transform hover:scale-110"
                 >
-                  <div
+                  <ShieldCheck
                     className={`h-8 w-8 transition-all ${
-                      level <= currentRating ? "opacity-100" : "opacity-30"
+                      level <= currentRating 
+                        ? getRatingColorClass(currentRating) 
+                        : "opacity-50 text-gray-400"
                     }`}
-                    style={{
-                      filter: level <= currentRating ? getRatingFilter(currentRating) : "none"
-                    }}
-                  >
-                    <Image
-                      src="/shield-check.svg"
-                      alt="Safety"
-                      width={32}
-                      height={32}
-                      className="h-full w-full"
-                    />
-                  </div>
+                  />
                 </button>
               );
             })}
           </div>
-          <p className="mt-1 text-xs text-gray-600">
+          <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
             {safetyRating > 0 ? `${safetyRating} out of 5` : "Click to rate"}
           </p>
         </div>
 
         {/* Taste Rating */}
         <div>
-          <label className="mb-2 block text-sm font-semibold text-gray-900">
+          <label className="mb-2 block text-sm font-semibold text-gray-900 dark:text-gray-100">
             Taste Rating <span className="text-red-500">*</span>
           </label>
           <div className="flex gap-1">
             {[1, 2, 3, 4, 5].map((level) => {
-              const getRatingColor = (rating: number) => {
-                if (rating >= 5) return "fill-blue-200 text-blue-700";
-                if (rating >= 4) return "fill-sky-200 text-sky-600";
-                if (rating >= 3) return "fill-yellow-200 text-yellow-600";
-                if (rating >= 2) return "fill-orange-200 text-orange-600";
-                return "fill-red-200 text-red-600";
+              // Colors match map marker colors exactly (same in light and dark mode)
+              const getRatingColorClass = (rating: number) => {
+                if (rating >= 5) return "text-blue-600";
+                if (rating >= 4) return "text-sky-500";
+                if (rating >= 3) return "text-yellow-500";
+                if (rating >= 2) return "text-orange-500";
+                return "text-red-500";
               };
               const currentRating = tasteHover || tasteRating;
               return (
@@ -219,19 +211,16 @@ export function ReviewForm({ city, onSuccess, customLocation }: Props) {
                 >
                   <GlassWater
                     className={`h-8 w-8 transition-all ${
-                      level <= currentRating
-                        ? getRatingColor(currentRating)
-                        : "text-gray-300"
+                      level <= currentRating 
+                        ? getRatingColorClass(currentRating) 
+                        : "opacity-50 text-gray-400"
                     }`}
-                    style={{
-                      filter: level <= currentRating ? "drop-shadow(0 1px 2px rgba(0,0,0,0.15))" : undefined
-                    }}
                   />
                 </button>
               );
             })}
           </div>
-          <p className="mt-1 text-xs text-gray-600">
+          <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
             {tasteRating > 0 ? `${tasteRating} out of 5` : "Click to rate"}
           </p>
         </div>
@@ -239,7 +228,7 @@ export function ReviewForm({ city, onSuccess, customLocation }: Props) {
 
       {/* Review Text */}
       <div>
-        <label htmlFor="reviewText" className="mb-2 block text-sm font-semibold text-gray-900">
+        <label htmlFor="reviewText" className="mb-2 block text-sm font-semibold text-gray-900 dark:text-gray-100">
           Your Experience (Optional)
         </label>
         <textarea
@@ -249,22 +238,22 @@ export function ReviewForm({ city, onSuccess, customLocation }: Props) {
           placeholder="Share your thoughts about the water quality, taste, or any tips for other travelers..."
           maxLength={1000}
           rows={4}
-          className="w-full rounded-2xl border border-white/40 bg-white/60 px-4 py-3 text-sm text-gray-900 backdrop-blur-sm transition-all placeholder:text-gray-600 focus:border-blue-500/50 focus:bg-white/80 focus:outline-none focus:ring-4 focus:ring-blue-500/10"
+          className="w-full rounded-2xl border border-white/40 bg-white/60 px-4 py-3 text-sm text-gray-900 backdrop-blur-[3px] transition-all placeholder:text-gray-600 focus:border-blue-500/50 focus:bg-white/80 focus:outline-none focus:ring-4 focus:ring-blue-500/10 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-400 dark:focus:border-blue-400"
         />
-        <p className="mt-1 text-xs text-gray-600">
+        <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
           {reviewText.length}/1000 characters
         </p>
       </div>
 
       {/* Optional Metrics */}
-      <div className="rounded-3xl border border-white/40 bg-white/60 p-6 backdrop-blur-md">
-        <h4 className="mb-4 text-sm font-semibold text-gray-900">
+      <div className="rounded-3xl border border-white/40 bg-white/60 p-6 backdrop-blur-[3px] dark:border-gray-600 dark:bg-gray-800">
+        <h4 className="mb-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
           Water Quality Metrics (Optional)
         </h4>
         <div className="space-y-4">
           {/* pH Level */}
           <div>
-            <label htmlFor="phLevel" className="mb-1 block text-xs font-medium text-gray-800">
+            <label htmlFor="phLevel" className="mb-1 block text-xs font-medium text-gray-800 dark:text-gray-200">
               pH Level
             </label>
             <input
@@ -276,20 +265,20 @@ export function ReviewForm({ city, onSuccess, customLocation }: Props) {
               value={phLevel}
               onChange={(e) => setPhLevel(e.target.value)}
               placeholder="e.g., 7.5"
-              className="w-full rounded-xl border border-white/40 bg-white/60 px-3 py-2 text-sm text-gray-900 backdrop-blur-sm transition-all placeholder:text-gray-600 focus:border-emerald-500/50 focus:bg-white/80 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
+              className="w-full rounded-xl border border-white/40 bg-white/60 px-3 py-2 text-sm text-gray-900 backdrop-blur-[3px] transition-all placeholder:text-gray-600 focus:border-emerald-500/50 focus:bg-white/80 focus:outline-none focus:ring-2 focus:ring-emerald-500/10 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-400 dark:focus:border-blue-400"
             />
           </div>
 
           {/* Hardness */}
           <div>
-            <label htmlFor="hardness" className="mb-1 block text-xs font-medium text-gray-800">
+            <label htmlFor="hardness" className="mb-1 block text-xs font-medium text-gray-800 dark:text-gray-200">
               Water Hardness
             </label>
             <select
               id="hardness"
               value={hardness}
               onChange={(e) => setHardness(e.target.value)}
-              className="w-full rounded-xl border border-white/40 bg-white/60 px-3 py-2 text-sm text-gray-900 backdrop-blur-sm transition-all focus:border-blue-500/50 focus:bg-white/80 focus:outline-none focus:ring-2 focus:ring-blue-500/10"
+              className="w-full rounded-xl border border-white/40 bg-white/60 px-3 py-2 text-sm text-gray-900 backdrop-blur-[3px] transition-all focus:border-blue-500/50 focus:bg-white/80 focus:outline-none focus:ring-2 focus:ring-blue-500/10 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:focus:border-blue-400 dark:focus:bg-gray-800 dark:[color-scheme:dark]"
             >
               <option value="">Select...</option>
               <option value="soft">Soft</option>
@@ -301,7 +290,7 @@ export function ReviewForm({ city, onSuccess, customLocation }: Props) {
 
           {/* Water Source */}
           <div>
-            <label htmlFor="waterSource" className="mb-1 block text-xs font-medium text-gray-800">
+            <label htmlFor="waterSource" className="mb-1 block text-xs font-medium text-gray-800 dark:text-gray-200">
               Water Source
             </label>
             <select
@@ -311,7 +300,7 @@ export function ReviewForm({ city, onSuccess, customLocation }: Props) {
                 setWaterSource(e.target.value);
                 if (e.target.value !== "other") setWaterSourceOther("");
               }}
-              className="w-full rounded-xl border border-white/40 bg-white/60 px-3 py-2 text-sm text-gray-900 backdrop-blur-sm transition-all focus:border-blue-500/50 focus:bg-white/80 focus:outline-none focus:ring-2 focus:ring-blue-500/10"
+              className="w-full rounded-xl border border-white/40 bg-white/60 px-3 py-2 text-sm text-gray-900 backdrop-blur-[3px] transition-all focus:border-blue-500/50 focus:bg-white/80 focus:outline-none focus:ring-2 focus:ring-blue-500/10 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:focus:border-blue-400 dark:focus:bg-gray-800 dark:[color-scheme:dark]"
             >
               <option value="">Select...</option>
               <option value="municipal">Municipal/Tap Water</option>
@@ -331,14 +320,14 @@ export function ReviewForm({ city, onSuccess, customLocation }: Props) {
                 onChange={(e) => setWaterSourceOther(e.target.value)}
                 placeholder="Please specify water source"
                 maxLength={100}
-                className="mt-2 w-full rounded-xl border border-white/40 bg-white/60 px-3 py-2 text-sm text-gray-900 backdrop-blur-sm transition-all placeholder:text-gray-600 focus:border-blue-500/50 focus:bg-white/80 focus:outline-none focus:ring-2 focus:ring-blue-500/10"
+                className="mt-2 w-full rounded-xl border border-white/40 bg-white/60 px-3 py-2 text-sm text-gray-900 backdrop-blur-[3px] transition-all placeholder:text-gray-600 focus:border-blue-500/50 focus:bg-white/80 focus:outline-none focus:ring-2 focus:ring-blue-500/10 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-400 dark:focus:border-blue-400"
               />
             )}
           </div>
 
           {/* Treatment Process */}
           <div>
-            <label htmlFor="treatmentProcess" className="mb-1 block text-xs font-medium text-gray-800">
+            <label htmlFor="treatmentProcess" className="mb-1 block text-xs font-medium text-gray-800 dark:text-gray-200">
               Treatment Process
             </label>
             <select
@@ -348,7 +337,7 @@ export function ReviewForm({ city, onSuccess, customLocation }: Props) {
                 setTreatmentProcess(e.target.value);
                 if (e.target.value !== "other") setTreatmentProcessOther("");
               }}
-              className="w-full rounded-xl border border-white/40 bg-white/60 px-3 py-2 text-sm text-gray-900 backdrop-blur-sm transition-all focus:border-blue-500/50 focus:bg-white/80 focus:outline-none focus:ring-2 focus:ring-blue-500/10"
+              className="w-full rounded-xl border border-white/40 bg-white/60 px-3 py-2 text-sm text-gray-900 backdrop-blur-[3px] transition-all focus:border-blue-500/50 focus:bg-white/80 focus:outline-none focus:ring-2 focus:ring-blue-500/10 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:focus:border-blue-400 dark:focus:bg-gray-800 dark:[color-scheme:dark]"
             >
               <option value="">Select...</option>
               <option value="chlorination">Chlorination</option>
@@ -370,7 +359,7 @@ export function ReviewForm({ city, onSuccess, customLocation }: Props) {
                 onChange={(e) => setTreatmentProcessOther(e.target.value)}
                 placeholder="Please specify treatment process"
                 maxLength={100}
-                className="mt-2 w-full rounded-xl border border-white/40 bg-white/60 px-3 py-2 text-sm text-gray-900 backdrop-blur-sm transition-all placeholder:text-gray-600 focus:border-blue-500/50 focus:bg-white/80 focus:outline-none focus:ring-2 focus:ring-blue-500/10"
+                className="mt-2 w-full rounded-xl border border-white/40 bg-white/60 px-3 py-2 text-sm text-gray-900 backdrop-blur-[3px] transition-all placeholder:text-gray-600 focus:border-blue-500/50 focus:bg-white/80 focus:outline-none focus:ring-2 focus:ring-blue-500/10 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-400 dark:focus:border-blue-400"
               />
             )}
           </div>
@@ -379,14 +368,14 @@ export function ReviewForm({ city, onSuccess, customLocation }: Props) {
 
       {/* Error Message */}
       {error && (
-        <div className="rounded-2xl border border-red-200/50 bg-red-50/80 p-3 text-sm text-red-700 shadow-lg backdrop-blur-sm">
+        <div className="rounded-2xl border border-red-200/50 bg-red-50/80 p-3 text-sm text-red-700 shadow-lg backdrop-blur-[3px]">
           {error}
         </div>
       )}
 
       {/* Success Message */}
       {success && (
-        <div className="rounded-2xl border border-blue-200/50 bg-linear-to-br from-blue-50/90 to-sky-50/90 p-3 text-sm text-blue-700 shadow-lg backdrop-blur-sm">
+        <div className="rounded-2xl border border-blue-200/50 bg-linear-to-br from-blue-50/90 to-sky-50/90 p-3 text-sm text-blue-700 shadow-lg backdrop-blur-[3px]">
           Review submitted successfully! Thank you for your contribution.
         </div>
       )}

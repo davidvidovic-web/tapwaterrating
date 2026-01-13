@@ -36,8 +36,7 @@ export async function GET(
       .select()
       .from(reviews)
       .where(and(eq(reviews.cityId, id), eq(reviews.isPublished, true)))
-      .orderBy(desc(reviews.createdAt))
-      .limit(10);
+      .orderBy(desc(reviews.createdAt));
 
     return NextResponse.json({ city, reviews: cityReviews });
   } catch (error) {

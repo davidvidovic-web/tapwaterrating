@@ -27,7 +27,7 @@ export function LocationButton({ cities, onCityFound }: Props) {
       <button
         onClick={requestLocation}
         disabled={loading}
-        className="flex h-11 w-11 items-center justify-center rounded-full border border-white/40 bg-white/60 shadow-lg backdrop-blur-xl transition-all hover:bg-white/80 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-50"
+        className="flex h-11 w-11 items-center justify-center rounded-full border border-white/40 bg-white/60 shadow-lg backdrop-blur-[3px] transition-all hover:bg-white/80 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-50"
         title="Use my location"
       >
         {loading ? (
@@ -37,7 +37,7 @@ export function LocationButton({ cities, onCityFound }: Props) {
         )}
       </button>
       {error && (
-        <div className="absolute top-16 rounded-2xl border border-red-200/50 bg-red-50/80 px-3 py-2 text-xs text-red-700 shadow-lg backdrop-blur-sm">
+        <div className="absolute top-16 rounded-2xl border border-red-200/50 bg-red-50/80 px-3 py-2 text-xs text-red-700 shadow-lg backdrop-blur-[3px]">
           {error}
         </div>
       )}

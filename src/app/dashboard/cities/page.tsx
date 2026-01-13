@@ -2,7 +2,7 @@
 
 import useSWR from "swr";
 import { City } from "@/db/schema";
-import { Trash2, Edit2, Save, X, Plus } from "lucide-react";
+import { Trash2, Edit2, Save, X, Plus, Merge, Search, AlertTriangle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DashboardNav } from "@/components/dashboard-nav";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -35,6 +36,9 @@ export default function CitiesManagement() {
   const [saving, setSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
+  const [mergingCity, setMergingCity] = useState<City | null>(null);
+  const [mergeTargetId, setMergeTargetId] = useState<string>("");
+  const [merging, setMerging] = useState(false);
   const [newCityForm, setNewCityForm] = useState<EditingCity>({
     name: "",
     country: "",
@@ -59,6 +63,75 @@ export default function CitiesManagement() {
     city.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     city.country.toLowerCase().includes(searchQuery.toLowerCase())
   ) || [];
+
+  // Find all duplicate groups (cities with exact same name, case-insensitive)
+  const getDuplicateGroups = () => {
+    if (!cities) return [];
+    
+    const nameMap = new Map<string, City[]>();
+    
+    cities.forEach(city => {
+      // Normalize name: lowercase, trim whitespace
+      const normalizedName = city.name.toLowerCase().trim();
+      const existing = nameMap.get(normalizedName) || [];
+      existing.push(city);
+      nameMap.set(normalizedName, existing);
+    });
+    
+    // Return only groups with more than one city (actual duplicates)
+    return Array.from(nameMap.entries())
+      .filter(([, group]) => group.length > 1)
+      .map(([name, group]) => ({ name, cities: group }))
+      .sort((a, b) => b.cities.length - a.cities.length);
+  };
+
+  const duplicateGroups = getDuplicateGroups();
+
+  // Find potential duplicates for a specific city (for the warning icon)
+  const findPotentialDuplicates = (city: City) => {
+    if (!cities) return [];
+    const normalizedName = city.name.toLowerCase().trim();
+    return cities.filter(c => {
+      if (c.id === city.id) return false;
+      return c.name.toLowerCase().trim() === normalizedName;
+    });
+  };
+
+  const handleMerge = async (sourceId: string, targetId: string, sourceName: string) => {
+    if (!confirm(`Are you sure you want to merge "${sourceName}" into the selected city? This will move all reviews and delete "${sourceName}".`)) {
+      return;
+    }
+
+    setMerging(true);
+    try {
+      const response = await fetch('/api/cities/merge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sourceId, targetId }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to merge cities');
+      }
+
+      const result = await response.json();
+      alert(result.message);
+      await mutate();
+      setMergingCity(null);
+      setMergeTargetId('');
+    } catch (error) {
+      console.error('Error merging cities:', error);
+      alert(error instanceof Error ? error.message : 'Failed to merge cities');
+    } finally {
+      setMerging(false);
+    }
+  };
+
+  const handleMergeFromModal = async () => {
+    if (!mergingCity || !mergeTargetId) return;
+    await handleMerge(mergingCity.id, mergeTargetId, mergingCity.name);
+  };
 
   const handleDelete = async (cityId: string) => {
     if (!confirm("Are you sure you want to delete this city? This will affect all reviews associated with it.")) {
@@ -179,34 +252,34 @@ export default function CitiesManagement() {
   }
 
   return (
-    <div className="min-h-screen bg-muted/30 p-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-sky-50 dark:from-gray-900 dark:to-gray-800 p-8">
       <div className="mx-auto max-w-7xl">
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Cities Management</h1>
-            <p className="mt-2 text-sm text-muted-foreground">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Cities Management</h1>
+            <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
               Manage cities and their metadata
             </p>
           </div>
-          <Button asChild variant="outline">
-            <Link href="/dashboard">
-              Back to Reviews
-            </Link>
-          </Button>
         </div>
 
+        {/* Navigation */}
+        <DashboardNav />
         {/* Search and Add */}
-        <Card className="mb-6">
+        <Card className="mb-6 border-white/40 dark:border-gray-700 bg-white/70 dark:bg-gray-900/70 backdrop-blur-[3px]">
           <CardContent className="pt-6">
             <div className="flex gap-4">
-              <Input
-                type="text"
-                placeholder="Search cities..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="flex-1"
-              />
-              <Button onClick={() => setShowAddForm(!showAddForm)}>
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
+                <Input
+                  type="text"
+                  placeholder="Search cities..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 border-white/40 dark:border-gray-700 bg-white/80 dark:bg-gray-800 backdrop-blur-[3px] text-gray-900 dark:text-white"
+                />
+              </div>
+              <Button onClick={() => setShowAddForm(!showAddForm)} className="bg-blue-600 text-white hover:bg-blue-700">
                 <Plus className="h-5 w-5" />
                 Add City
               </Button>
@@ -214,11 +287,122 @@ export default function CitiesManagement() {
           </CardContent>
         </Card>
 
+        {/* Duplicate Cities Section */}
+        {duplicateGroups.length > 0 && (
+          <Card className="mb-6 border-orange-300 dark:border-orange-500 bg-orange-50/70 dark:bg-orange-950/30 backdrop-blur-[3px]">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-orange-700 dark:text-orange-500">
+                <AlertTriangle className="h-5 w-5" />
+                Duplicate Cities Found ({duplicateGroups.length} groups)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="mb-4 text-sm text-muted-foreground">
+                The following cities have duplicate entries. Select which one to keep and merge the others into it.
+              </p>
+              <div className="space-y-4">
+                {duplicateGroups.map((group) => (
+                  <div key={group.name} className="rounded-lg border bg-background p-4">
+                    <h4 className="mb-3 font-semibold capitalize">{group.name}</h4>
+                    <div className="space-y-2">
+                      {group.cities.map((city) => (
+                        <div key={city.id} className="flex items-center justify-between rounded-md bg-muted/50 p-2">
+                          <div className="flex-1">
+                            <span className="font-medium">{city.name}</span>
+                            <span className="mx-2 text-muted-foreground">•</span>
+                            <span className="text-sm text-muted-foreground">{city.country}</span>
+                            <span className="mx-2 text-muted-foreground">•</span>
+                            <span className="text-sm text-muted-foreground">{city.reviewCount || 0} reviews</span>
+                            <span className="mx-2 text-muted-foreground">•</span>
+                            <span className="text-xs text-muted-foreground">
+                              ({city.latitude.toFixed(4)}, {city.longitude.toFixed(4)})
+                            </span>
+                          </div>
+                          <div className="flex gap-2">
+                            {group.cities.filter(c => c.id !== city.id).map(otherCity => (
+                              <Button
+                                key={otherCity.id}
+                                size="sm"
+                                variant="outline"
+                                disabled={merging}
+                                onClick={() => handleMerge(city.id, otherCity.id, city.name)}
+                                title={`Merge into ${otherCity.name} (${otherCity.reviewCount || 0} reviews)`}
+                              >
+                                {merging ? '...' : `→ Merge into ${otherCity.reviewCount || 0}r`}
+                              </Button>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Merge City Modal */}
+        {mergingCity && (
+          <Card className="mb-6 border-orange-300 dark:border-orange-500 bg-orange-50/70 dark:bg-orange-950/30 backdrop-blur-[3px]">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-orange-700 dark:text-orange-500">
+                <Merge className="h-5 w-5" />
+                Merge City: {mergingCity.name}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
+                Select the target city to merge &quot;{mergingCity.name}&quot; into. All reviews will be moved to the target city, and &quot;{mergingCity.name}&quot; will be deleted.
+              </p>
+              <div className="flex gap-4">
+                <select
+                  value={mergeTargetId}
+                  onChange={(e) => setMergeTargetId(e.target.value)}
+                  className="flex-1 rounded-md border border-white/40 dark:border-gray-700 bg-white/80 dark:bg-gray-800 backdrop-blur-[3px] px-3 py-2 text-sm text-gray-900 dark:text-white"
+                >
+                  <option value="">Select target city...</option>
+                  {/* Show duplicates first, then all other cities */}
+                  {findPotentialDuplicates(mergingCity).length > 0 && (
+                    <optgroup label="Suggested (same name)">
+                      {findPotentialDuplicates(mergingCity).map(city => (
+                        <option key={city.id} value={city.id}>
+                          ⭐ {city.name}, {city.country} ({city.reviewCount || 0} reviews)
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                  <optgroup label="All cities">
+                    {cities?.filter(c => c.id !== mergingCity.id && !findPotentialDuplicates(mergingCity).some(d => d.id === c.id)).map(city => (
+                      <option key={city.id} value={city.id}>
+                        {city.name}, {city.country} ({city.reviewCount || 0} reviews)
+                      </option>
+                    ))}
+                  </optgroup>
+                </select>
+                <Button
+                  onClick={handleMergeFromModal}
+                  disabled={!mergeTargetId || merging}
+                  variant="destructive"
+                >
+                  {merging ? 'Merging...' : 'Merge'}
+                </Button>
+                <Button
+                  onClick={() => { setMergingCity(null); setMergeTargetId(''); }}
+                  variant="outline"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Add City Form */}
         {showAddForm && (
-          <Card className="mb-6">
+          <Card className="mb-6 border-white/40 dark:border-gray-700 bg-white/70 dark:bg-gray-900/70 backdrop-blur-[3px]">
             <CardHeader>
-              <CardTitle>Add New City</CardTitle>
+              <CardTitle className="text-gray-900 dark:text-white">Add New City</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-4">
@@ -257,7 +441,7 @@ export default function CitiesManagement() {
                 <select
                   value={newCityForm.officialStatus}
                   onChange={(e) => setNewCityForm({ ...newCityForm, officialStatus: e.target.value })}
-                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  className="flex h-9 w-full rounded-md border border-white/40 dark:border-gray-700 bg-white/80 dark:bg-gray-800 backdrop-blur-[3px] px-3 py-1 text-sm text-gray-900 dark:text-white shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-500"
                 >
                   <option value="unknown">Unknown</option>
                   <option value="safe">Safe</option>
@@ -284,9 +468,9 @@ export default function CitiesManagement() {
         )}
 
         {/* Cities Stats */}
-        <Card className="mb-6">
+        <Card className="mb-6 border-white/40 dark:border-gray-700 bg-white/70 dark:bg-gray-900/70 backdrop-blur-[3px]">
           <CardContent className="pt-6">
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
               Total Cities: <span className="font-semibold">{cities?.length || 0}</span>
               {searchQuery && (
                 <span className="ml-4">
@@ -298,22 +482,22 @@ export default function CitiesManagement() {
         </Card>
 
         {/* Cities Table */}
-        <Card>
+        <Card className="border-white/40 dark:border-gray-700 bg-white/70 dark:bg-gray-900/70 backdrop-blur-[3px]">
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead>City</TableHead>
-                <TableHead>Country</TableHead>
-                <TableHead>Coordinates</TableHead>
-                <TableHead>Reviews</TableHead>
-                <TableHead>Avg Rating</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+              <TableRow className="border-white/30 dark:border-gray-800 hover:bg-gray-50/50 dark:hover:bg-gray-800/50">
+                <TableHead className="text-gray-700 dark:text-gray-300">City</TableHead>
+                <TableHead className="text-gray-700 dark:text-gray-300">Country</TableHead>
+                <TableHead className="text-gray-700 dark:text-gray-300">Coordinates</TableHead>
+                <TableHead className="text-gray-700 dark:text-gray-300">Reviews</TableHead>
+                <TableHead className="text-gray-700 dark:text-gray-300">Avg Rating</TableHead>
+                <TableHead className="text-gray-700 dark:text-gray-300">Status</TableHead>
+                <TableHead className="text-right text-gray-700 dark:text-gray-300">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredCities.map((city) => (
-                <TableRow key={city.id}>
+                <TableRow key={city.id} className="border-white/30 dark:border-gray-800 hover:bg-gray-50/50 dark:hover:bg-gray-800/50">
                   {editingId === city.id && editForm ? (
                     <>
                       <TableCell>
@@ -348,17 +532,17 @@ export default function CitiesManagement() {
                           />
                         </div>
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
+                      <TableCell className="text-sm text-gray-600 dark:text-gray-400">
                         {city.reviewCount || 0}
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
+                      <TableCell className="text-sm text-gray-600 dark:text-gray-400">
                         {city.avgSafetyRating?.toFixed(1) || "N/A"}
                       </TableCell>
                       <TableCell>
                         <select
                           value={editForm.officialStatus}
                           onChange={(e) => setEditForm({ ...editForm, officialStatus: e.target.value })}
-                          className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                          className="flex h-9 w-full rounded-md border border-white/40 dark:border-gray-700 bg-white/80 dark:bg-gray-800 backdrop-blur-[3px] px-3 py-1 text-sm text-gray-900 dark:text-white shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-500"
                         >
                           <option value="unknown">Unknown</option>
                           <option value="safe">Safe</option>
@@ -420,7 +604,25 @@ export default function CitiesManagement() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
+                        <div className="flex justify-end gap-1">
+                          {findPotentialDuplicates(city).length > 0 && (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="text-orange-500 hover:text-orange-600"
+                              title={`Potential duplicates: ${findPotentialDuplicates(city).map(c => c.name).join(', ')}`}
+                            >
+                              <AlertTriangle className="h-4 w-4" />
+                            </Button>
+                          )}
+                          <Button
+                            onClick={() => setMergingCity(city)}
+                            size="icon"
+                            variant="ghost"
+                            title="Merge into another city"
+                          >
+                            <Merge className="h-4 w-4" />
+                          </Button>
                           <Button
                             onClick={() => handleEdit(city)}
                             size="icon"

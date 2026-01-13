@@ -1,16 +1,18 @@
-# Tap Water Rating
+# TapWaterRating
 
 A web application for rating and reviewing tap water quality around the world. Users can view water quality data, submit reviews, and discover safe drinking water locations through an interactive map interface.
 
 ## Overview
 
-Tap Water Rating helps travelers and residents make informed decisions about tap water safety by providing:
+TapWaterRating helps travelers and residents make informed decisions about tap water safety by providing:
 
 - Community-driven water quality ratings and reviews
 - Interactive map interface for discovering locations
 - Official water quality metrics (pH levels, hardness, chlorine levels, TDS)
 - Location-based search and geolocation support
 - User authentication via GitHub and Google OAuth
+- **Content management system with AI-powered writing assistance**
+- **Knowledge base for water quality information and guides**
 
 ## Tech Stack
 
@@ -23,6 +25,9 @@ Tap Water Rating helps travelers and residents make informed decisions about tap
 - **Maps**: Google Maps (via @vis.gl/react-google-maps)
 - **UI Components**: Radix UI primitives
 - **Data Fetching**: SWR
+- **Content Editor**: TipTap (WYSIWYG editor)
+- **AI Integration**: OpenAI GPT-4o-mini
+- **Notifications**: Radix UI Toast
 
 ## Prerequisites
 
@@ -68,6 +73,9 @@ AUTH_GOOGLE_SECRET=your-google-oauth-secret
 # Maps API
 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your-google-maps-api-key
 
+# OpenAI API (for AI content generation)
+OPENAI_API_KEY=your-openai-api-key
+
 # Analytics & SEO (Optional)
 NEXT_PUBLIC_GA_MEASUREMENT_ID=G-XXXXXXXXXX
 NEXT_PUBLIC_SITE_URL=https://your-domain.com
@@ -77,6 +85,7 @@ NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION=your-google-verification-code
 4. Set up the database:
 
 Refer to [DATABASE.md](DATABASE.md) for detailed database setup instructions, including:
+
 - Creating a Turso database
 - Applying schema migrations
 - Seeding initial data
@@ -186,6 +195,22 @@ web/
 - Track contribution history
 - Personalized user experience
 
+### Content Management (Admin)
+
+- Create and edit blog posts and pages
+- WYSIWYG editor with rich text formatting
+- AI-powered content generation and optimization
+- Categories and tags organization
+- SEO metadata management
+- Draft/publish workflow
+
+### Knowledge Base
+
+- Centralized hub for all content
+- Search across posts and pages
+- Clean, accessible layout
+- Organized information architecture
+
 ## Database Schema
 
 The application uses the following main tables:
@@ -201,25 +226,29 @@ See [DATABASE.md](DATABASE.md) for complete schema details.
 
 ## API Routes
 
-### GET /api/cities
+### Cities & Reviews
 
-Fetch cities with optional filtering:
+- **GET /api/cities**: Fetch cities with optional filtering (search, geographic bounds, limit)
+- **GET /api/cities/[id]**: Fetch a specific city with its reviews
+- **POST /api/reviews**: Submit a new review (requires authentication)
+- **GET /api/reviews/[id]**: Get a specific review
+- **GET /api/geocode**: Reverse geocode coordinates to city information
 
-- `search`: Search by city name or country
-- `minLat`, `maxLat`, `minLng`, `maxLng`: Geographic bounds
-- `limit`: Maximum results (default 50, max 100)
+### Content Management
 
-### GET /api/cities/[id]
+- **GET /api/content/posts**: List all blog posts
+- **GET /api/content/posts/[id]**: Get a specific post
+- **POST /api/content/posts**: Create a new post (admin only)
+- **PUT /api/content/posts/[id]**: Update a post (admin only)
+- **DELETE /api/content/posts/[id]**: Delete a post (admin only)
+- **GET /api/content/categories**: List all categories
+- **GET /api/content/tags**: List all tags
 
-Fetch a specific city with its reviews.
+### AI Features (Admin Only)
 
-### POST /api/reviews
-
-Submit a new review. Requires authentication.
-
-### GET /api/geocode
-
-Reverse geocode coordinates to city information.
+- **POST /api/ai/generate-metadata**: Generate SEO metadata (title, description, keywords, excerpt)
+- **POST /api/ai/improve-content**: Improve, expand, simplify, or optimize content
+- **POST /api/ai/generate-content**: Generate full content from a prompt
 
 ## Environment Variables
 
@@ -238,6 +267,7 @@ Reverse geocode coordinates to city information.
 - `NEXT_PUBLIC_GA_MEASUREMENT_ID`: Google Analytics measurement ID (format: G-XXXXXXXXXX)
 - `NEXT_PUBLIC_SITE_URL`: Production site URL (e.g., https://tapwaterrating.com)
 - `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION`: Google Search Console verification code
+- `OPENAI_API_KEY`: OpenAI API key for AI content generation features
 
 ## SEO Features
 
@@ -280,9 +310,112 @@ Ensure all environment variables are properly configured in your deployment envi
 
 ## Changelog
 
+### Version 1.3.5 (January 2026)
+
+**Major Changes:**
+
+- **Geocoding Migration**: Replaced Google Places/Maps API with Nominatim (OpenStreetMap)
+  - Free, no API key required
+  - Added English language preference for international locations
+  - Supports autocomplete, reverse geocoding, and place lookup
+- **Map Tiles**: Switched from OpenStreetMap to CartoDB Voyager for better English labels
+- **Logo & Icons**: Complete icon suite generated from vector logo
+  - SVG export functionality with download button
+  - Favicon, Apple Touch Icon, and PWA icons (192px, 512px)
+  - Maskable icon support for Android
+
+**User Experience Improvements:**
+
+- Search results limited to 3 most relevant places
+- Higher zoom levels for search results (street-level: 17, neighborhood: 15, city: 13)
+- Fixed search bar collapse/expand behavior
+- Mobile drawer now overlays map instead of resizing it
+- Removed console logging from API routes for cleaner server output
+
+**Technical Improvements:**
+
+- Database singleton pattern to prevent Turso concurrent write errors
+- Added `syncUrl` and `syncInterval` configuration for better sync performance
+- TypeScript fixes for city status enum validation
+- Proper handling of unrated cities (shows review form)
+- Location data now embedded directly in autocomplete responses
+
+**API Updates:**
+
+- `/api/places/autocomplete`: Nominatim search with English preference
+- `/api/places/details`: Nominatim lookup by OSM entity ID
+- `/api/geocode`: Nominatim reverse geocoding with addressdetails
+- All routes include `Accept-Language: en` headers and `extratags` for localized names
+
+### Version 1.4.0 (January 2026)
+
+**Content Management System:**
+
+- Full WYSIWYG editor using TipTap with rich text formatting
+- Content types: Posts (for blog) and Pages (for static content)
+- Categories and tags system with color coding
+- Draft/Published/Archived status management
+- SEO metadata fields (meta title, description, keywords)
+- Featured images support
+- Slug auto-generation from titles
+- View counter for analytics
+- Content JSON storage for advanced editing
+
+**AI-Powered Features:**
+
+- OpenAI GPT-4o-mini integration for content generation
+- AI Generate Metadata: Auto-creates SEO titles, descriptions, and keywords
+- AI Improve Content: Enhances clarity, grammar, and flow
+- AI Expand Content: Adds detail and elaboration
+- AI SEO Optimize: Incorporates keywords naturally
+- AI Generate Excerpt: Creates compelling summaries
+- AI Generate Content: Full content creation from prompts
+- Cost-effective implementation (~$0.003 per content generation)
+
+**Knowledge Base:**
+
+- Unified `/knowledge` route displaying all posts and pages
+- Search functionality across all content
+- Simple, clean list layout with icons
+- Proper routing: posts at `/blog/[slug]`, pages at `/[slug]`
+- Integrated navigation from all content back to knowledge base
+
+**User Experience Improvements:**
+
+- Toast notifications replacing browser alerts
+- Four variants: success, error, warning, and info
+- Auto-dismiss after 5 seconds with manual close option
+- Swipe-to-dismiss on mobile
+- Non-blocking notifications with smooth animations
+
+**Design Updates:**
+
+- Flat design system with removed box shadows
+- Light mode with liquid glass aesthetic (backdrop-blur, transparency)
+- Consistent glassmorphism across public pages
+- Clean borders for element definition
+- Simplified 404 page with single "Go Home" button
+
+**Technical Fixes:**
+
+- Fixed TipTap editor content loading with editorKey pattern
+- Resolved AI-generated content not appearing in editor
+- Proper 404 handling with Next.js `notFound()` function
+- Editor remounting on content updates
+- NextAuth v5 compatibility throughout
+
+**SEO & Content:**
+
+- Dynamic sitemap generation including posts and pages
+- Metadata generation per post/page
+- Proper canonical URLs for all content
+- `/knowledge` added to sitemap
+- View counting on published content
+
 ### Version 1.1.0 (January 2026)
 
 **New Features:**
+
 - Admin authentication system with secure login
 - PWA support with custom icons and manifest
 - Enhanced loading screens with professional animations
@@ -290,6 +423,7 @@ Ensure all environment variables are properly configured in your deployment envi
 - Search bar with clear functionality
 
 **Technical Improvements:**
+
 - JWT-based authentication with NextAuth v5
 - Database-backed admin user management with bcrypt encryption
 - TypeScript strict mode compliance
@@ -297,6 +431,7 @@ Ensure all environment variables are properly configured in your deployment envi
 - Production build optimizations
 
 **Bug Fixes:**
+
 - Fixed authentication flow redirects
 - Resolved TypeScript compilation errors
 - Improved null safety in map components

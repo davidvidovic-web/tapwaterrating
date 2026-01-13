@@ -173,6 +173,111 @@ export const helpfulVotes = sqliteTable(
   })
 );
 
+// Content Management Tables
+export const categories = sqliteTable(
+  "categories",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    slug: text("slug").notNull().unique(),
+    description: text("description"),
+    parentId: text("parent_id"),
+    order: integer("order").default(0),
+    isActive: integer("is_active", { mode: "boolean" }).default(true),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).$defaultFn(
+      () => new Date()
+    ),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" }).$defaultFn(
+      () => new Date()
+    ),
+  },
+  (table) => ({
+    slugIdx: index("category_slug_idx").on(table.slug),
+    parentIdx: index("category_parent_idx").on(table.parentId),
+  })
+);
+
+export const tags = sqliteTable(
+  "tags",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    slug: text("slug").notNull().unique(),
+    description: text("description"),
+    color: text("color"), // hex color for UI
+    isActive: integer("is_active", { mode: "boolean" }).default(true),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).$defaultFn(
+      () => new Date()
+    ),
+  },
+  (table) => ({
+    slugIdx: index("tag_slug_idx").on(table.slug),
+  })
+);
+
+export const posts = sqliteTable(
+  "posts",
+  {
+    id: text("id").primaryKey(),
+    title: text("title").notNull(),
+    slug: text("slug").notNull().unique(),
+    excerpt: text("excerpt"),
+    content: text("content").notNull(), // HTML/JSON content from Tiptap
+    contentJson: text("content_json"), // JSON format for editing
+    featuredImage: text("featured_image"),
+    type: text("type", { enum: ["post", "page"] }).notNull().default("post"),
+    status: text("status", { enum: ["draft", "published", "archived"] })
+      .notNull()
+      .default("draft"),
+    authorId: text("author_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    categoryId: text("category_id").references(() => categories.id, {
+      onDelete: "set null",
+    }),
+    viewCount: integer("view_count").default(0),
+    metaTitle: text("meta_title"),
+    metaDescription: text("meta_description"),
+    metaKeywords: text("meta_keywords"),
+    publishedAt: integer("published_at", { mode: "timestamp_ms" }),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).$defaultFn(
+      () => new Date()
+    ),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" }).$defaultFn(
+      () => new Date()
+    ),
+  },
+  (table) => ({
+    slugIdx: index("post_slug_idx").on(table.slug),
+    statusIdx: index("post_status_idx").on(table.status),
+    authorIdx: index("post_author_idx").on(table.authorId),
+    categoryIdx: index("post_category_idx").on(table.categoryId),
+    publishedIdx: index("post_published_idx").on(table.publishedAt),
+  })
+);
+
+export const postTags = sqliteTable(
+  "post_tags",
+  {
+    postId: text("post_id")
+      .notNull()
+      .references(() => posts.id, { onDelete: "cascade" }),
+    tagId: text("tag_id")
+      .notNull()
+      .references(() => tags.id, { onDelete: "cascade" }),
+  },
+  (table) => ({
+    compoundKey: primaryKey({
+      columns: [table.postId, table.tagId],
+    }),
+    tagIdx: index("post_tag_tag_idx").on(table.tagId),
+  })
+);
+
 export type City = typeof cities.$inferSelect;
 export type Review = typeof reviews.$inferSelect;
 export type User = typeof users.$inferSelect;
+export type Category = typeof categories.$inferSelect;
+export type Tag = typeof tags.$inferSelect;
+export type Post = typeof posts.$inferSelect;
+export type PostTag = typeof postTags.$inferSelect;

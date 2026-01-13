@@ -1,6 +1,8 @@
 @import "tailwindcss";
 @import "leaflet/dist/leaflet.css";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: 0 0% 100%;
   --foreground: 0 0% 9%;
@@ -60,38 +62,687 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: 222 47% 11%;
-    --foreground: 210 40% 98%;
-    --card: 222 47% 11%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222 47% 11%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 217 91% 60%;
-    --primary-foreground: 222 47% 11%;
-    --secondary: 217 33% 17%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 65%;
-    --accent: 217 33% 17%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 63% 31%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217 33% 17%;
-    --input: 217 33% 17%;
-    --ring: 224 76% 48%;
-    --success: 142 76% 36%;
-    --success-foreground: 210 40% 98%;
-    --warning: 38 92% 50%;
-    --warning-foreground: 222 47% 11%;
-    --info: 199 89% 48%;
-    --info-foreground: 222 47% 11%;
-  }
+.dark {
+  --background: 222.2 84% 4.9%;
+  --foreground: 210 40% 98%;
+  --card: 222.2 84% 4.9%;
+  --card-foreground: 210 40% 98%;
+  --popover: 222.2 84% 4.9%;
+  --popover-foreground: 210 40% 98%;
+  --primary: 210 40% 98%;
+  --primary-foreground: 222.2 47.4% 11.2%;
+  --secondary: 217.2 32.6% 17.5%;
+  --secondary-foreground: 210 40% 98%;
+  --muted: 217.2 32.6% 17.5%;
+  --muted-foreground: 215 20.2% 65.1%;
+  --accent: 217.2 32.6% 17.5%;
+  --accent-foreground: 210 40% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 217.2 32.6% 17.5%;
+  --input: 217.2 32.6% 17.5%;
+  --ring: 212.7 26.8% 83.9%;
+  --success: 142 76% 36%;
+  --success-foreground: 210 40% 98%;
+  --warning: 38 92% 50%;
+  --warning-foreground: 222 47% 11%;
+  --info: 199 89% 48%;
+  --info-foreground: 222 47% 11%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  margin: 0;
+  padding: 0;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
   font-family: Arial, Helvetica, sans-serif;
+  min-height: 100vh;
+
+  /* Liquid Theme Switcher Variables */
+  --c-glass: #bbbbbc;
+  --c-light: #fff;
+  --c-dark: #000;
+  --c-content: #224;
+  --c-action: #0052f5;
+  --c-bg: #e8e8e9;
+  --glass-reflex-dark: 1;
+  --glass-reflex-light: 1;
+  --saturation: 150%;
+
+  /* Rating icon filters - Light mode */
+  --filter-rating-blue: invert(37%) sepia(93%) saturate(1352%)
+    hue-rotate(195deg) brightness(91%) contrast(101%);
+  --filter-rating-sky: invert(70%) sepia(35%) saturate(679%) hue-rotate(169deg)
+    brightness(96%) contrast(92%);
+  --filter-rating-yellow: invert(77%) sepia(61%) saturate(411%)
+    hue-rotate(359deg) brightness(98%) contrast(92%);
+  --filter-rating-orange: invert(58%) sepia(73%) saturate(1352%)
+    hue-rotate(351deg) brightness(98%) contrast(97%);
+  --filter-rating-red: invert(27%) sepia(93%) saturate(4526%) hue-rotate(348deg)
+    brightness(89%) contrast(93%);
+
+  /* Inactive rating icon filter for light mode */
+  --filter-rating-inactive: invert(50%) sepia(0%) saturate(0%) brightness(90%)
+    contrast(90%);
+
+  transition: background 400ms cubic-bezier(1, 0, 0.4, 1),
+    color 400ms cubic-bezier(1, 0, 0.4, 1);
+}
+
+.dark body {
+  --c-glass: #bbbbbc;
+  --c-light: #fff;
+  --c-dark: #000;
+  --c-content: #e1e1e1;
+  --c-action: #03d5ff;
+  --c-bg: #1b1b1d;
+  --glass-reflex-dark: 2;
+  --glass-reflex-light: 0.3;
+  --saturation: 150%;
+
+  /* Rating icon filters - Dark mode (much brighter) */
+  --filter-rating-blue: invert(70%) sepia(80%) saturate(3000%)
+    hue-rotate(190deg) brightness(110%) contrast(90%);
+  --filter-rating-sky: invert(80%) sepia(50%) saturate(1200%) hue-rotate(165deg)
+    brightness(115%) contrast(85%);
+  --filter-rating-yellow: invert(90%) sepia(80%) saturate(800%) hue-rotate(5deg)
+    brightness(115%) contrast(90%);
+  --filter-rating-orange: invert(80%) sepia(90%) saturate(2000%)
+    hue-rotate(350deg) brightness(115%) contrast(90%);
+  --filter-rating-red: invert(60%) sepia(95%) saturate(4000%) hue-rotate(340deg)
+    brightness(115%) contrast(90%);
+
+  /* Inactive rating icon filter for dark mode */
+  --filter-rating-inactive: invert(70%) sepia(0%) saturate(0%) brightness(100%)
+    contrast(90%);
+}
+
+/* Liquid Theme Switcher Styles */
+.switcher {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 148px;
+  max-width: 148px;
+  height: 64px;
+  box-sizing: border-box;
+  isolation: isolate;
+  padding: 8px 10px 10px;
+  margin: 0;
+  border: none;
+  border-radius: 99em;
+  background-color: color-mix(in srgb, var(--c-glass) 12%, transparent);
+  backdrop-filter: blur(3px) saturate(var(--saturation));
+  -webkit-backdrop-filter: blur(3px) saturate(var(--saturation));
+  box-shadow: inset 0 0 0 1px
+      color-mix(
+        in srgb,
+        var(--c-light) calc(var(--glass-reflex-light) * 10%),
+        transparent
+      ),
+    inset 1.8px 3px 0px -2px color-mix(in srgb, var(--c-light)
+          calc(var(--glass-reflex-light) * 90%), transparent),
+    inset -2px -2px 0px -2px color-mix(in srgb, var(--c-light)
+          calc(var(--glass-reflex-light) * 80%), transparent),
+    inset -3px -8px 1px -6px color-mix(in srgb, var(--c-light)
+          calc(var(--glass-reflex-light) * 60%), transparent),
+    inset -0.3px -1px 4px 0px
+      color-mix(
+        in srgb,
+        var(--c-dark) calc(var(--glass-reflex-dark) * 12%),
+        transparent
+      ),
+    inset -1.5px 2.5px 0px -2px
+      color-mix(
+        in srgb,
+        var(--c-dark) calc(var(--glass-reflex-dark) * 20%),
+        transparent
+      ),
+    inset 0px 3px 4px -2px color-mix(in srgb, var(--c-dark)
+          calc(var(--glass-reflex-dark) * 20%), transparent),
+    inset 2px -6.5px 1px -4px
+      color-mix(
+        in srgb,
+        var(--c-dark) calc(var(--glass-reflex-dark) * 10%),
+        transparent
+      ),
+    0px 1px 5px 0px
+      color-mix(
+        in srgb,
+        var(--c-dark) calc(var(--glass-reflex-dark) * 10%),
+        transparent
+      ),
+    0px 6px 16px 0px
+      color-mix(
+        in srgb,
+        var(--c-dark) calc(var(--glass-reflex-dark) * 8%),
+        transparent
+      );
+  transition: background-color 400ms cubic-bezier(1, 0, 0.4, 1),
+    box-shadow 400ms cubic-bezier(1, 0, 0.4, 1);
+}
+
+.switcher__legend {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  border: 0;
+  padding: 0;
+  white-space: nowrap;
+  clip-path: inset(100%);
+  clip: rect(0 0 0 0);
+  overflow: hidden;
+}
+
+.switcher__input {
+  clip: rect(0 0 0 0);
+  clip-path: inset(100%);
+  height: 1px;
+  width: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+}
+
+.switcher__icon {
+  display: block;
+  width: 100%;
+  transition: scale 200ms cubic-bezier(0.5, 0, 0, 1);
+}
+
+.switcher__filter {
+  position: absolute;
+  width: 0;
+  height: 0;
+  z-index: -1;
+}
+
+.switcher__option {
+  --c: var(--c-content);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0 14px;
+  width: 60px;
+  height: 100%;
+  box-sizing: border-box;
+  border-radius: 99em;
+  opacity: 1;
+  transition: all 160ms;
+}
+
+.switcher__option:hover {
+  --c: var(--c-action);
+  cursor: pointer;
+}
+
+.switcher__option:hover .switcher__icon {
+  scale: 1.2;
+}
+
+.switcher__option:has(input:checked) {
+  --c: var(--c-content);
+  cursor: auto;
+}
+
+.switcher__option:has(input:checked) .switcher__icon {
+  scale: 1;
+}
+
+.switcher::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 4px;
+  display: block;
+  width: 70px;
+  height: calc(100% - 8px);
+  border-radius: 99em;
+  background-color: color-mix(in srgb, var(--c-glass) 36%, transparent);
+  z-index: -1;
+  box-shadow: inset 0 0 0 1px
+      color-mix(
+        in srgb,
+        var(--c-light) calc(var(--glass-reflex-light) * 10%),
+        transparent
+      ),
+    inset 2px 1px 0px -1px color-mix(in srgb, var(--c-light)
+          calc(var(--glass-reflex-light) * 90%), transparent),
+    inset -1.5px -1px 0px -1px color-mix(in srgb, var(--c-light)
+          calc(var(--glass-reflex-light) * 80%), transparent),
+    inset -2px -6px 1px -5px color-mix(in srgb, var(--c-light)
+          calc(var(--glass-reflex-light) * 60%), transparent),
+    inset -1px 2px 3px -1px
+      color-mix(
+        in srgb,
+        var(--c-dark) calc(var(--glass-reflex-dark) * 20%),
+        transparent
+      ),
+    inset 0px -4px 1px -2px
+      color-mix(
+        in srgb,
+        var(--c-dark) calc(var(--glass-reflex-dark) * 10%),
+        transparent
+      ),
+    0px 3px 6px 0px
+      color-mix(
+        in srgb,
+        var(--c-dark) calc(var(--glass-reflex-dark) * 8%),
+        transparent
+      );
+}
+
+.switcher:has(input[c-option="1"]:checked)::after {
+  translate: 0 0;
+  transform-origin: right;
+  transition: background-color 400ms cubic-bezier(1, 0, 0.4, 1),
+    box-shadow 400ms cubic-bezier(1, 0, 0.4, 1),
+    translate 400ms cubic-bezier(1, 0, 0.4, 1);
+  animation: scaleToggle 440ms ease;
+}
+
+.switcher:has(input[c-option="2"]:checked)::after {
+  translate: 66px 0;
+  transition: background-color 400ms cubic-bezier(1, 0, 0.4, 1),
+    box-shadow 400ms cubic-bezier(1, 0, 0.4, 1),
+    translate 400ms cubic-bezier(1, 0, 0.4, 1);
+  animation: scaleToggle2 440ms ease;
+}
+
+.switcher[c-previous="1"]:has(input[c-option="2"]:checked)::after {
+  transform-origin: left;
+}
+
+@keyframes scaleToggle {
+  0% {
+    scale: 1 1;
+  }
+  50% {
+    scale: 1.1 1;
+  }
+  100% {
+    scale: 1 1;
+  }
+}
+
+@keyframes scaleToggle2 {
+  0% {
+    scale: 1 1;
+  }
+  50% {
+    scale: 1.2 1;
+  }
+  100% {
+    scale: 1 1;
+  }
+}
+
+/* Navigation Pills - Completely Independent from Theme Switcher */
+.nav-pills {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 240px;
+  max-width: 240px;
+  height: 64px;
+  box-sizing: border-box;
+  isolation: isolate;
+  padding: 8px 10px 10px;
+  margin: 0;
+  border: none;
+  border-radius: 99em;
+  background-color: color-mix(in srgb, var(--c-glass) 12%, transparent);
+  backdrop-filter: blur(3px) saturate(var(--saturation));
+  -webkit-backdrop-filter: blur(3px) saturate(var(--saturation));
+  box-shadow: inset 0 0 0 1px
+      color-mix(
+        in srgb,
+        var(--c-light) calc(var(--glass-reflex-light) * 10%),
+        transparent
+      ),
+    inset 1.8px 3px 0px -2px color-mix(in srgb, var(--c-light)
+          calc(var(--glass-reflex-light) * 90%), transparent),
+    inset -2px -2px 0px -2px color-mix(in srgb, var(--c-light)
+          calc(var(--glass-reflex-light) * 80%), transparent),
+    inset -3px -8px 1px -6px color-mix(in srgb, var(--c-light)
+          calc(var(--glass-reflex-light) * 60%), transparent),
+    inset -0.3px -1px 4px 0px
+      color-mix(
+        in srgb,
+        var(--c-dark) calc(var(--glass-reflex-dark) * 12%),
+        transparent
+      ),
+    inset -1.5px 2.5px 0px -2px
+      color-mix(
+        in srgb,
+        var(--c-dark) calc(var(--glass-reflex-dark) * 20%),
+        transparent
+      ),
+    inset 0px 3px 4px -2px color-mix(in srgb, var(--c-dark)
+          calc(var(--glass-reflex-dark) * 20%), transparent),
+    inset 2px -6.5px 1px -4px
+      color-mix(
+        in srgb,
+        var(--c-dark) calc(var(--glass-reflex-dark) * 10%),
+        transparent
+      ),
+    0px 1px 5px 0px
+      color-mix(
+        in srgb,
+        var(--c-dark) calc(var(--glass-reflex-dark) * 10%),
+        transparent
+      ),
+    0px 6px 16px 0px
+      color-mix(
+        in srgb,
+        var(--c-dark) calc(var(--glass-reflex-dark) * 8%),
+        transparent
+      );
+  transition: background-color 400ms cubic-bezier(1, 0, 0.4, 1),
+    box-shadow 400ms cubic-bezier(1, 0, 0.4, 1);
+}
+
+.nav-pills__link {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0 14px;
+  flex: 1;
+  height: 100%;
+  box-sizing: border-box;
+  border-radius: 99em;
+  opacity: 1;
+  transition: color 160ms;
+  color: var(--c-content);
+  text-decoration: none;
+}
+
+.nav-pills__link:hover {
+  color: var(--c-action);
+  cursor: pointer;
+}
+
+.nav-pills::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 4px;
+  display: block;
+  width: calc(50% - 7px);
+  height: calc(100% - 8px);
+  border-radius: 99em;
+  background-color: color-mix(in srgb, var(--c-glass) 36%, transparent);
+  z-index: -1;
+  box-shadow: inset 0 0 0 1px
+      color-mix(
+        in srgb,
+        var(--c-light) calc(var(--glass-reflex-light) * 10%),
+        transparent
+      ),
+    inset 2px 1px 0px -1px color-mix(in srgb, var(--c-light)
+          calc(var(--glass-reflex-light) * 90%), transparent),
+    inset -1.5px -1px 0px -1px color-mix(in srgb, var(--c-light)
+          calc(var(--glass-reflex-light) * 80%), transparent),
+    inset -2px -6px 1px -5px color-mix(in srgb, var(--c-light)
+          calc(var(--glass-reflex-light) * 60%), transparent),
+    inset -1px 2px 3px -1px
+      color-mix(
+        in srgb,
+        var(--c-dark) calc(var(--glass-reflex-dark) * 20%),
+        transparent
+      ),
+    inset 0px -4px 1px -2px
+      color-mix(
+        in srgb,
+        var(--c-dark) calc(var(--glass-reflex-dark) * 10%),
+        transparent
+      ),
+    0px 3px 6px 0px
+      color-mix(
+        in srgb,
+        var(--c-dark) calc(var(--glass-reflex-dark) * 8%),
+        transparent
+      );
+}
+
+.nav-pills[data-nav-position="resources"]::before {
+  translate: 0 0;
+  transform-origin: right;
+  transition: background-color 400ms cubic-bezier(1, 0, 0.4, 1),
+    box-shadow 400ms cubic-bezier(1, 0, 0.4, 1),
+    translate 400ms cubic-bezier(1, 0, 0.4, 1);
+  animation: navSlideLeft 440ms ease;
+}
+
+.nav-pills[data-nav-position="blog"]::before {
+  translate: calc(100% + 6px) 0;
+  transition: background-color 400ms cubic-bezier(1, 0, 0.4, 1),
+    box-shadow 400ms cubic-bezier(1, 0, 0.4, 1),
+    translate 400ms cubic-bezier(1, 0, 0.4, 1);
+  animation: navSlideRight 440ms ease;
+}
+
+.nav-pills[data-nav-prev="resources"][data-nav-position="blog"]::before {
+  transform-origin: left;
+}
+
+@keyframes navSlideLeft {
+  0% {
+    scale: 1 1;
+  }
+  50% {
+    scale: 1.1 1;
+  }
+  100% {
+    scale: 1 1;
+  }
+}
+
+@keyframes navSlideRight {
+  0% {
+    scale: 1 1;
+  }
+  50% {
+    scale: 1.2 1;
+  }
+  100% {
+    scale: 1 1;
+  }
+}
+
+/* Logo Glass Styling */
+.logo-glass {
+  background-color: color-mix(in srgb, var(--c-glass) 12%, transparent);
+  backdrop-filter: blur(3px) saturate(var(--saturation));
+  -webkit-backdrop-filter: blur(3px) saturate(var(--saturation));
+  box-shadow: inset 0 0 0 1px
+      color-mix(
+        in srgb,
+        var(--c-light) calc(var(--glass-reflex-light) * 10%),
+        transparent
+      ),
+    inset 1.8px 3px 0px -2px color-mix(in srgb, var(--c-light)
+          calc(var(--glass-reflex-light) * 90%), transparent),
+    inset -2px -2px 0px -2px color-mix(in srgb, var(--c-light)
+          calc(var(--glass-reflex-light) * 80%), transparent),
+    inset -3px -8px 1px -6px color-mix(in srgb, var(--c-light)
+          calc(var(--glass-reflex-light) * 60%), transparent),
+    inset -0.3px -1px 4px 0px
+      color-mix(
+        in srgb,
+        var(--c-dark) calc(var(--glass-reflex-dark) * 12%),
+        transparent
+      ),
+    inset -1.5px 2.5px 0px -2px
+      color-mix(
+        in srgb,
+        var(--c-dark) calc(var(--glass-reflex-dark) * 20%),
+        transparent
+      ),
+    inset 0px 3px 4px -2px color-mix(in srgb, var(--c-dark)
+          calc(var(--glass-reflex-dark) * 20%), transparent),
+    inset 2px -6.5px 1px -4px
+      color-mix(
+        in srgb,
+        var(--c-dark) calc(var(--glass-reflex-dark) * 10%),
+        transparent
+      ),
+    0px 1px 5px 0px
+      color-mix(
+        in srgb,
+        var(--c-dark) calc(var(--glass-reflex-dark) * 10%),
+        transparent
+      ),
+    0px 6px 16px 0px
+      color-mix(
+        in srgb,
+        var(--c-dark) calc(var(--glass-reflex-dark) * 8%),
+        transparent
+      );
+  transition: background-color 400ms cubic-bezier(1, 0, 0.4, 1),
+    box-shadow 400ms cubic-bezier(1, 0, 0.4, 1);
+}
+
+/* Navigation Glass Link Styling */
+.nav-glass-link {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  height: 64px;
+  padding: 0 24px;
+  border-radius: 99em;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--c-content);
+  background-color: color-mix(in srgb, var(--c-glass) 12%, transparent);
+  backdrop-filter: blur(3px) saturate(var(--saturation));
+  -webkit-backdrop-filter: blur(3px) saturate(var(--saturation));
+  box-shadow: inset 0 0 0 1px
+      color-mix(
+        in srgb,
+        var(--c-light) calc(var(--glass-reflex-light) * 10%),
+        transparent
+      ),
+    inset 1.8px 3px 0px -2px color-mix(in srgb, var(--c-light)
+          calc(var(--glass-reflex-light) * 90%), transparent),
+    inset -2px -2px 0px -2px color-mix(in srgb, var(--c-light)
+          calc(var(--glass-reflex-light) * 80%), transparent),
+    inset -3px -8px 1px -6px color-mix(in srgb, var(--c-light)
+          calc(var(--glass-reflex-light) * 60%), transparent),
+    inset -0.3px -1px 4px 0px
+      color-mix(
+        in srgb,
+        var(--c-dark) calc(var(--glass-reflex-dark) * 12%),
+        transparent
+      ),
+    inset -1.5px 2.5px 0px -2px
+      color-mix(
+        in srgb,
+        var(--c-dark) calc(var(--glass-reflex-dark) * 20%),
+        transparent
+      ),
+    inset 0px 3px 4px -2px color-mix(in srgb, var(--c-dark)
+          calc(var(--glass-reflex-dark) * 20%), transparent),
+    inset 2px -6.5px 1px -4px
+      color-mix(
+        in srgb,
+        var(--c-dark) calc(var(--glass-reflex-dark) * 10%),
+        transparent
+      ),
+    0px 1px 5px 0px
+      color-mix(
+        in srgb,
+        var(--c-dark) calc(var(--glass-reflex-dark) * 10%),
+        transparent
+      ),
+    0px 6px 16px 0px
+      color-mix(
+        in srgb,
+        var(--c-dark) calc(var(--glass-reflex-dark) * 8%),
+        transparent
+      );
+  transition: all 400ms cubic-bezier(1, 0, 0.4, 1);
+}
+
+.nav-glass-link:hover {
+  color: var(--c-action);
+  transform: scale(1.05);
+}
+
+/* Glass Panel Styling - for search bar, city panel, dropdowns */
+.glass-panel {
+  background-color: color-mix(in srgb, var(--c-bg) 85%, transparent);
+  backdrop-filter: blur(3px) saturate(var(--saturation));
+  -webkit-backdrop-filter: blur(3px) saturate(var(--saturation));
+  box-shadow: inset 0 0 0 1px
+      color-mix(
+        in srgb,
+        var(--c-light) calc(var(--glass-reflex-light) * 10%),
+        transparent
+      ),
+    inset 1.8px 3px 0px -2px color-mix(in srgb, var(--c-light)
+          calc(var(--glass-reflex-light) * 90%), transparent),
+    inset -2px -2px 0px -2px color-mix(in srgb, var(--c-light)
+          calc(var(--glass-reflex-light) * 80%), transparent),
+    inset -3px -8px 1px -6px color-mix(in srgb, var(--c-light)
+          calc(var(--glass-reflex-light) * 60%), transparent),
+    inset -0.3px -1px 4px 0px
+      color-mix(
+        in srgb,
+        var(--c-dark) calc(var(--glass-reflex-dark) * 12%),
+        transparent
+      ),
+    inset -1.5px 2.5px 0px -2px
+      color-mix(
+        in srgb,
+        var(--c-dark) calc(var(--glass-reflex-dark) * 20%),
+        transparent
+      ),
+    inset 0px 3px 4px -2px color-mix(in srgb, var(--c-dark)
+          calc(var(--glass-reflex-dark) * 20%), transparent),
+    inset 2px -6.5px 1px -4px
+      color-mix(
+        in srgb,
+        var(--c-dark) calc(var(--glass-reflex-dark) * 10%),
+        transparent
+      ),
+    0px 1px 5px 0px
+      color-mix(
+        in srgb,
+        var(--c-dark) calc(var(--glass-reflex-dark) * 10%),
+        transparent
+      ),
+    0px 6px 16px 0px
+      color-mix(
+        in srgb,
+        var(--c-dark) calc(var(--glass-reflex-dark) * 8%),
+        transparent
+      );
+  transition: background-color 400ms cubic-bezier(1, 0, 0.4, 1),
+    box-shadow 400ms cubic-bezier(1, 0, 0.4, 1);
+}
+
+/* Glass Panel with rounded corners for cards/panels */
+.glass-panel-rounded {
+  border-radius: 1.5rem;
+}
+
+.glass-panel-pill {
+  border-radius: 99em;
+}
+
+.light .backdrop-blur, .backdrop-blur {
+  backdrop-filter: blur(3px) !important;
+  -webkit-backdrop-filter: blur(3px) !important;
+  background: transparent !important;
+}
+
+.dark .backdrop-blur {
+  background: rgba(27, 27, 29, 0.744) !important;
 }

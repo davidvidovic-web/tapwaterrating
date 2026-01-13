@@ -149,21 +149,22 @@ export function SearchBar({ cities, onSelect, onGeolocation, collapsed = false, 
   return (
     <div className="relative w-full max-w-xl">
       <div className={`
-        flex items-center rounded-full border border-white/40 bg-white/60 shadow-lg backdrop-blur-xl transition-all hover:bg-white/80 hover:shadow-xl
+        glass-panel glass-panel-pill backdrop-blur flex items-center transition-all
         ${shouldCollapse ? 'px-2 py-2 justify-between' : 'px-4 py-2.5'}
       `}>
         {/* Search section - always on left */}
         {shouldCollapse ? (
           <button
             onClick={() => handleExpand(true)}
-            className="flex items-center justify-center rounded-full p-2 text-gray-600 transition-colors hover:bg-black/5 hover:text-blue-700"
+            className="flex items-center justify-center rounded-full p-2 transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+            style={{ color: 'var(--c-content)' }}
             title="Search cities"
           >
             <Search className="h-5 w-5" />
           </button>
         ) : (
           <>
-            <Search className="mr-3 h-5 w-5 text-gray-600" />
+            <Search className="mr-3 h-5 w-5" style={{ color: 'var(--c-content)' }} />
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -173,8 +174,8 @@ export function SearchBar({ cities, onSelect, onGeolocation, collapsed = false, 
                 }
               }}
               placeholder="Where are you tapping?"
-              className="w-full bg-transparent text-base font-medium text-gray-900 placeholder:text-gray-600 focus:outline-none"
-              style={{ fontSize: '16px' }}
+              className="w-full bg-transparent text-base font-medium focus:outline-none"
+              style={{ fontSize: '16px', color: 'var(--c-content)' }}
               autoFocus={isExpanded}
             />
             {!shouldCollapse && (
@@ -184,7 +185,7 @@ export function SearchBar({ cities, onSelect, onGeolocation, collapsed = false, 
                   setResults([]);
                   handleExpand(false);
                 }}
-                className="mr-2 flex items-center justify-center rounded-full p-1 text-gray-600 transition-colors hover:bg-black/5 hover:text-gray-900"
+                className="mr-2 flex items-center justify-center rounded-full p-1 text-gray-600 dark:text-gray-400 transition-colors hover:bg-black/5 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-gray-100"
                 title={query ? "Clear search" : "Close search"}
               >
                 <X className="h-4 w-4" />
@@ -198,13 +199,14 @@ export function SearchBar({ cities, onSelect, onGeolocation, collapsed = false, 
           </>
         )}
         
-        {!shouldCollapse && <div className="mx-2 h-6 w-px bg-gray-400/40" />}
+        {!shouldCollapse && <div className="mx-2 h-6 w-px bg-gray-400/40 dark:bg-gray-600/40" />}
         
         {/* Location button - always on right */}
         <button
           onClick={requestLocation}
           disabled={locationLoading}
-          className="flex items-center justify-center rounded-full p-2 text-gray-600 transition-colors hover:bg-black/5 hover:text-blue-700 disabled:opacity-50"
+          className="flex items-center justify-center rounded-full p-2 transition-colors hover:bg-black/5 dark:hover:bg-white/5 hover:text-blue-600 disabled:opacity-50"
+          style={{ color: 'var(--c-content)' }}
           title="Use my location"
         >
           {locationLoading ? (
@@ -217,13 +219,13 @@ export function SearchBar({ cities, onSelect, onGeolocation, collapsed = false, 
 
       {/* Error notification */}
       {showError && locationError && (
-        <div className="absolute top-full mt-2 w-full rounded-2xl border border-red-200 bg-red-50/95 px-4 py-3 text-sm text-red-700 shadow-lg backdrop-blur-sm z-50">
+        <div className="absolute top-full mt-2 w-full rounded-2xl border border-red-200 dark:border-red-800 bg-red-50/95 dark:bg-red-950/95 px-4 py-3 text-sm text-red-700 dark:text-red-300 shadow-lg backdrop-blur-[3px] z-50">
           {locationError}
         </div>
       )}
 
       {results.length > 0 && (
-        <ul className="absolute top-full mt-2 w-full divide-y divide-gray-200/50 rounded-3xl border border-white/40 bg-white/60 py-2 shadow-2xl backdrop-blur-xl z-50">
+        <ul className="glass-panel glass-panel-rounded absolute top-full mt-2 w-full divide-y divide-gray-200/30 dark:divide-gray-700/30 py-2 z-50">
           {results.map((result) => {
             if (result.type === 'city') {
               const city = result.data;
@@ -231,7 +233,7 @@ export function SearchBar({ cities, onSelect, onGeolocation, collapsed = false, 
                 <li key={`city-${city.id}`}>
                   <button
                     type="button"
-                    className="mx-2 flex w-[calc(100%-1rem)] items-center justify-between rounded-xl px-4 py-3 text-left text-sm transition-colors hover:bg-white/40"
+                    className="mx-2 flex w-[calc(100%-1rem)] items-center justify-between rounded-xl px-4 py-3 text-left text-sm transition-colors hover:bg-white/40 dark:hover:bg-gray-800/40"
                     onClick={() => {
                       onSelect(city);
                       setQuery("");
@@ -240,10 +242,10 @@ export function SearchBar({ cities, onSelect, onGeolocation, collapsed = false, 
                     }}
                   >
                     <div className="flex flex-col">
-                      <span className="font-semibold text-gray-900">{city.name}</span>
-                      <span className="text-xs text-gray-600">{city.country}</span>
+                      <span className="font-semibold text-gray-900 dark:text-gray-100">{city.name}</span>
+                      <span className="text-xs text-gray-600 dark:text-gray-400">{city.country}</span>
                     </div>
-                    <span className="rounded-full bg-blue-100/60 px-2 py-1 text-xs font-medium text-blue-700 backdrop-blur-sm">
+                    <span className="rounded-full bg-blue-100/60 dark:bg-blue-950/60 px-2 py-1 text-xs font-medium text-blue-700 dark:text-blue-300 backdrop-blur-[3px]">
                       Rated
                     </span>
                   </button>
@@ -260,7 +262,7 @@ export function SearchBar({ cities, onSelect, onGeolocation, collapsed = false, 
                 <li key={`google-${placeId}`}>
                   <button
                     type="button"
-                    className="mx-2 flex w-[calc(100%-1rem)] items-center justify-between rounded-xl px-4 py-3 text-left text-sm transition-colors hover:bg-white/40"
+                    className="mx-2 flex w-[calc(100%-1rem)] items-center justify-between rounded-xl px-4 py-3 text-left text-sm transition-colors hover:bg-white/40 dark:hover:bg-gray-800/40"
                     onClick={async () => {
                       setIsLoading(true);
                       try {
@@ -306,10 +308,10 @@ export function SearchBar({ cities, onSelect, onGeolocation, collapsed = false, 
                     }}
                   >
                     <div className="flex flex-col">
-                      <span className="font-semibold text-gray-900">{mainText}</span>
-                      <span className="text-xs text-gray-600">{secondaryText}</span>
+                      <span className="font-semibold text-gray-900 dark:text-gray-100">{mainText}</span>
+                      <span className="text-xs text-gray-600 dark:text-gray-400">{secondaryText}</span>
                     </div>
-                    <span className="rounded-full bg-gray-100/60 px-2 py-1 text-xs font-medium text-gray-600 backdrop-blur-sm">
+                    <span className="rounded-full bg-gray-100/60 dark:bg-gray-800/60 px-2 py-1 text-xs font-medium text-gray-600 dark:text-gray-400 backdrop-blur-[3px]">
                       Map
                     </span>
                   </button>
